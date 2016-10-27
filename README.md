@@ -1,2 +1,3 @@
 # jsxparser.js
-jsx parser without regex
+
+a fast jsx parser without regex
