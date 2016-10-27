@@ -1,3 +1,86 @@
+// example output
+// 
+// {
+//     nodeType: 1,
+//     type: "div",
+//     props: {
+//         class: "oh",
+//         checked: true
+//     },
+//     children: [
+// 		{
+// 	        nodeType: 1,
+// 	        type: "p",
+// 	        props: {
+// 	            class: {
+// 	                name
+// 	            }
+// 	        },
+// 	        children: [
+// 		        {
+// 		            nodeType: 3,
+// 		            type: "text",
+// 		            props: {},
+// 		            children: "hello world"
+// 		        }
+// 	        ]
+// 	    }, 
+// 	    {
+// 	        nodeType: 2,
+// 	        type: Component,
+// 	        props: {},
+// 	        children: []
+// 	    }, 
+// 	    {
+// 	        nodeType: 3,
+// 	        type: "text",
+// 	        props: {},
+// 	        children: "Hello World {this.state}"
+// 	        // TODO: make {this.state} a new text node
+// 	    }, 
+// 	    {
+// 	        nodeType: 1,
+// 	        type: "input",
+// 	        props: {},
+// 	        children: []
+// 	    }
+//     ]
+// }
+
+function stringifyElement (nodeType, type, props, children) {
+	return ('{\n nodeType: '+nodeType+', type: '+type+', props: {'+props+'}, children: '+children+', _el: null}');
+}
+
+function stringifyProps (obj) {
+	var output = '', keys = Object.keys(obj);
+
+	for (var i = 0, len = keys.length; i < len; i++) {
+		var name = keys[i], prop = obj[name];
+		output += name + ':' + prop + (len-1 !== i ? ',' : '');
+	}
+
+	return output;
+}
+
+function stringifyChildren (nodeType, children) {
+	return nodeType === 3 ? 
+		'"' + children + '"': 
+		'[' + children.map(function (child) { return stringifyAST(child); }).join('') + ']';
+}
+
+function stringifyAST (subject) {
+	var nodeType = subject.nodeType,
+		type     = subject.type, 
+		props    = stringifyProps(subject.props), 
+		children = stringifyChildren(nodeType, subject.children);
+
+		if (type.toLowerCase() === type) {
+			type = '"' + type + '"';
+		}
+
+	return stringifyElement(nodeType, type, props, children);
+}
+
 function Parser () {
 	// textnode factory
 	function VText (children) {
@@ -67,20 +150,6 @@ function Parser () {
 		};
 	}
 
-	var boolProps = {
-		async:    0,  autofocus:  0,  autoplay:  0,  checked:    0,  allowFullscreen: 0,   
-		controls: 0,  declare:    0,  default:   0,  multiple:   0,  defaultMuted: 0,     
-		defer:    0,  disabled:   0,  draggable: 0,  enabled:    0,  formNoValidate: 0,   
-		inert:    0,  isMap:      0,  itemScope: 0,  loop:       0,  defaultChecked: 0,         
-		noShade:  0,  noValidate: 0,  noWrap:    0,  open:       0,  pauseOnExit: 0,      
-		reversed: 0,  scoped:     0,  seamless:  0,  selected:   0,  typeMustMatch: 0,        
-		sortable: 0,  visible:    0,  trueSpeed: 0,  noResize:   0,  indeterminate: 0, 
-		noHref:   0,  required:   0,  translate: 0,  spellcheck: 0,  defaultSelected: 0,
-		compact:  0,  hidden:     0,  muted:     0,  readOnly:   0, 
-	};
-
-	var emptyObject  = {};
-
 	function pushProps (key, value, props) {
 		if (value === '' && boolProps.hasOwnProperty(key)) {
 			value = true;
@@ -93,6 +162,19 @@ function Parser () {
 		children[children.length] = child;
 	}
 
+	var boolProps = {
+		async:    0,  autofocus:  0,  autoplay:  0,  checked:    0,  allowFullscreen: 0,   
+		controls: 0,  declare:    0,  default:   0,  multiple:   0,  defaultMuted: 0,     
+		defer:    0,  disabled:   0,  draggable: 0,  enabled:    0,  formNoValidate: 0,   
+		inert:    0,  isMap:      0,  itemScope: 0,  loop:       0,  defaultChecked: 0,         
+		noShade:  0,  noValidate: 0,  noWrap:    0,  open:       0,  pauseOnExit: 0,      
+		reversed: 0,  scoped:     0,  seamless:  0,  selected:   0,  typeMustMatch: 0,        
+		sortable: 0,  visible:    0,  trueSpeed: 0,  noResize:   0,  indeterminate: 0, 
+		noHref:   0,  required:   0,  translate: 0,  spellcheck: 0,  defaultSelected: 0,
+		compact:  0,  hidden:     0,  muted:     0,  readOnly:   0};
+
+	var emptyObject = {};
+
 	function parser (str) {
 		var inElement      = false,  // everything between `<` and `/`
 			inTag          = false,  // everything between `<` and `>`
@@ -103,9 +185,14 @@ function Parser () {
 			result         = [],     // element store
 			arr            = [],     // buffer array of elements
 			current        = null,   // current element
-			level          = -1;
+			level          = -1,
+			jsx            = false,
+			start          = '',
+			end            = '',
+			index          = 0;
 
 		var input = Stream(str);
+		var output = '';
 
 		// while not end of file iterate through all the characters
         while (!input.eof()) {
@@ -125,32 +212,49 @@ function Parser () {
     				level--;
     			}
 
-    			if (input.peek() !== '/') {
-    				// init element, props
-    				inElement = inTag = true;
+    			var nextCharacter = input.peek();
 
-    				// encounter opening element identifier go one level down the tree
-    				level++;
+    			if (nextCharacter !== '/') {
+    				// html comment
+    				if (nextCharacter === '!') {
+    					// traverse to end of html comment
+    					while (!input.eof()) {
+    						// end when we react closing tag
+    						if (input.next() === '>') {
+    							break;
+    						}
+    					}
+    				} else {
+    					// init element, props
+    					inElement = inTag = true;
 
-    				// create new element
-    				current = VNode('', {}, []);
+    					// encounter opening element identifier go one level down the tree
+    					level++;
 
-    				pushChildren(current, level === 0 ? result : arr[level - 1].children);
+    					// create new element
+    					current = VNode('', {}, []);
 
-    				arr[level] = current;
+    					pushChildren(current, level === 0 ? result : arr[level - 1].children);
+
+    					arr[level] = current;
+    				}
     			}
     		} else if (character === '/') {
-    			if (input.peek() === '/') {
+    			var nextCharacter = input.peek();
+    			
+    			if (nextCharacter === '/') {
     				// traverse to end of line comment
     				while (!input.eof()) {
     					if (input.next() === '\n') {
+    						// end when we react closing tag
     						break;
     					}
     				}
-    			} else if (input.peek() === '*') {
+    			} else if (nextCharacter === '*') {
     				// traverse to end of block comment
     				while (!input.eof()) { 
     					if (input.next() === '/' && input.lookout() === '*') {
+    						// end when we react closing tag
     						break;
     					}
     				}
@@ -165,6 +269,7 @@ function Parser () {
     				// traverse to the the closing tag
     				while (!input.eof()) {
     					if (input.next() === '>') {
+    						// end when we react closing tag
     						break;
     					}
     				}
@@ -245,22 +350,59 @@ function Parser () {
 			}
         }
 
-        return this.ast = result;
+        return result;
 	}
 
-	function stringfy (str) {
-		if (this.ast !== null) {
-			var ast = this.ast;
-			// generate string from ast
-		} else if (typeof str === 'string' && str.length > 3) {
-			this.parse(str);
-			return this.stringfy();
+	return function (str) {
+		var output    = ''; // output string
+		var line      = ''; // current line
+		var blob      = ''; // blob of jsx string
+		var jsx       = false;
+		var previous  = '';
+
+		// find jsx locations
+		for (var i = 0, len = str.length; i < len; i++) {
+			var char = str.charAt(i);
+
+			// within jsx block
+			if (jsx) {
+				// if current === ')' and previous === '>'
+				// end
+				if (char === ')' && previous === '>') {
+					jsx = false;
+					output += '@jsx-placeholder' + char;
+
+					var ast = parser(blob);
+
+					console.log(ast);
+					console.log(stringifyAST(ast[0]));
+				}
+				// else if (char !== '\n' && char !== '\t') {
+				else {
+					if (char !== '\t') {
+						blob += char;
+
+						// non whitespace previous character
+						if (char !== ' ' && char !== '\n') {
+							previous = char;
+						}
+					}
+				}
+			} 
+			else if (!jsx) {
+				// if current character === `<` and next character !== ' ' 
+				// start jsx
+				if (char === '<' && str[i+1] !== ' ') {
+					jsx = true;
+					blob = char;
+				} else {
+					output += char;
+				}
+			}
 		}
-	}
 
-	return {
-		ast: null,
-		parse: parser,
-		stringfy: stringfy
+		console.log(output+'');
+
+		// console.log(1, output);
 	};
 }
