@@ -1,0 +1,34 @@
+{
+	"name": "jsxparser.js",
+	"main": "jsxparser.js",
+	"description": "a blazing fast, lightweight jsx parser.",
+	"version": "2.1.2",
+	"homepage": "https://github.com/thysultan/jsxparser.js",
+	"license": "MIT",
+	"author": {
+		"name": "Sultan Tarimo",
+		"email": "sultantarimo@me.com"
+	},
+	"keywords": [
+		"jsx",
+		"transpiler",
+		"compiler",
+		"parser",
+		"vdom", 
+		"virtual", 
+		"virtual dom", 
+		"fast",
+		"lightweight",
+	],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/thysultan/jsxparser.js"
+	},
+	"bugs": {
+		"url": "https://github.com/thysultan/jsxparser.js/issues"
+	},
+	"scripts": {
+		"test": "node ./tests/tests.js"
+	},
+	"files": ["jsxparser.min.js", "jsxparser.js"]
+}
