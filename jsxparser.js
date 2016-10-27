@@ -93,7 +93,7 @@ function Parser () {
 		children[children.length] = child;
 	}
 
-	return function (str) {
+	function parser (str) {
 		var inElement      = false,  // everything between `<` and `/`
 			inTag          = false,  // everything between `<` and `>`
 			inProps        = false,  // everything between and `<tag ` and `>`
@@ -103,7 +103,6 @@ function Parser () {
 			result         = [],     // element store
 			arr            = [],     // buffer array of elements
 			current        = null,   // current element
-			skip           = false,  //
 			level          = -1;
 
 		var input = Stream(str);
@@ -246,6 +245,22 @@ function Parser () {
 			}
         }
 
-        return result;
+        return this.ast = result;
 	}
+
+	function stringfy (str) {
+		if (this.ast !== null) {
+			var ast = this.ast;
+			// generate string from ast
+		} else if (typeof str === 'string' && str.length > 3) {
+			this.parse(str);
+			return this.stringfy();
+		}
+	}
+
+	return {
+		ast: null,
+		parse: parser,
+		stringfy: stringfy
+	};
 }
