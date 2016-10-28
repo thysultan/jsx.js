@@ -2,8 +2,8 @@
 
 An extendable and lightweight jsx parser without regex
 
-- ~14kb minified
-- ~3 minified and gzipped
+- ~14kb un-minified
+- ~3kb minified and gzipped
 
 ## API
 
