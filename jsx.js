@@ -205,7 +205,10 @@
 	function pushProps (key, value, props, node) {
 		if (value === '' && boolProps.hasOwnProperty(key)) {
 			value = true;
+		} else if (value.charAt(0) === '{') {
+			value = value.substr(1, value.length-2);
 		}
+
 
 		VProps(key, value, props, node);
 	}
@@ -532,7 +535,7 @@
 			if (jsx) {
 				if (char === ')' && previous === '>') {
 					jsx = false;
-					output += '(' + stringifyAST(parseStringToAST(blob)[0]) + ')' + char;
+					output += stringifyAST(parseStringToAST(blob)[0]) + char;
 				} else {
 					if (char !== '\t') {
 						blob += char;

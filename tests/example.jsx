@@ -25,8 +25,6 @@ var template = (
  * this comment block will show
  */
 
-<!-- and this html comment -->
-
 return (
 	<p class={name}>hello world</p>
 );
