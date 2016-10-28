@@ -231,7 +231,7 @@
 	 * @param  {function} func
 	 */
 	function forIn (subject, func) {
-		for (name in subject) {
+		for (var name in subject) {
 			func(name, subject[name], subject);
 		}
 	}

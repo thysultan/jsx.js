@@ -18,7 +18,7 @@
 		"virtual", 
 		"virtual dom", 
 		"fast",
-		"lightweight",
+		"lightweight"
 	],
 	"repository": {
 		"type": "git",
@@ -28,7 +28,11 @@
 		"url": "https://github.com/thysultan/jsx.js/issues"
 	},
 	"scripts": {
+		"transpile": "node ./index.js",
 		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"bin": {
+		"jsx": "./index.js"
 	},
 	"files": ["jsx.min.js", "jsx.js"]
 }
