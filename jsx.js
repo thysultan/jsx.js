@@ -126,7 +126,7 @@
 			 * @param  {VNode[]}  children
 			 * @return {string}          
 			 */
-			VNode: function VNode (nodeType, type, props, children) {
+			VNode: function VNode (type, props, children, nodeType) {
 				return '{nodeType:'+nodeType+',type:'+type+',props:{'+props+'},children:'+children+',_el:null}';
 			}
 		}
@@ -326,7 +326,7 @@
 		var candidate = subject.type,
 			type      = candidate.toLowerCase() === candidate ? ('"' + candidate + '"') : candidate;
 
-		return stringifyVNode(nodeType, type, props, children);
+		return stringifyVNode(type, props, children, nodeType || null);
 	}
 
 
@@ -340,16 +340,16 @@
 	
 
  	function parseStringToAST (str) {
- 		var inElement      = false,  // everything between `<` and `/`
- 			inTag          = false,  // everything between `<` and `>`
- 			inProps        = false,  // everything between and `<tag ` and `>`
- 			inText         = false,  // everything not of the above
- 			result         = [],     // element store
- 			levelsArr      = [],     // buffer array of elements indexed by level
- 			current        = null,   // current element
- 			level          = -1;
+ 		var inElement = false,  // everything between `<` and `/`
+ 			inTag     = false,  // everything between `<` and `>`
+ 			inProps   = false,  // everything between and `<tag ` and `>`
+ 			inText    = false,  // everything not of the above
+ 			result    = [],     // element store
+ 			levelsArr = [],     // buffer array of elements indexed by level
+ 			current   = null,   // current element
+ 			level     = -1;
 
- 		var input  = Stream(str);
+ 		var input     = Stream(str);
 
  		// while not end of file iterate through all the characters
          while (!input.eof()) {

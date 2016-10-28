@@ -44,7 +44,7 @@ Internally the library uses three functions to determine the structure of the re
 for pushing new props.
 
 You can inject your own functions to use to create a structure that works with your prefered framework.
-The following is the logic of the default functions used tailored by default for [Dio.js](https://github.com/thysultan/dio.js)
+The following is the logic of the default functions used, tailored by default for [Dio.js](https://github.com/thysultan/dio.js)
 
 ```javascript
 jsx.extend({
@@ -78,7 +78,7 @@ jsx.extend({
 	props: function (key, value, props, node) {
 		props[key] = value;
 	}
-	stringify: function (nodeType, type, props, children) {
+	stringify: function (type, props, children, nodeType) {
 		return '{nodeType:'+nodeType+',type:'+type+',props:{'+props+'},children:'+children+',_el:null}';
 	}
 })
