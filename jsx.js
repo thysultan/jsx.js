@@ -23,12 +23,14 @@
 }(this, function () {
 	'use strict';
 
-	var VHelpers    = VFactory(),
+	var VHelpers       = VFactory(),
 
-		VText       = VHelpers.VText,
-		VElement    = VHelpers.VElement,
-		VComponent  = VHelpers.VComponent,
-		VProps      = VHelpers.VProps,
+		VText          = VHelpers.VText,
+		VElement       = VHelpers.VElement,
+		VComponent     = VHelpers.VComponent,
+		VProps         = VHelpers.VProps,
+
+		stringifyVNode = VHelpers.VNode,
 
 		emptyObject = {},
 		boolProps   = {
@@ -113,6 +115,19 @@
 			 */
 			VProps: function VProps (key, value, props, node) {
 				props[key] = value;
+			},
+
+			/**
+			 * stringify vnode
+			 * 
+			 * @param  {number}   nodeType
+			 * @param  {(string)} type
+			 * @param  {Object[]} props
+			 * @param  {VNode[]}  children
+			 * @return {string}          
+			 */
+			VNode: function VNode (nodeType, type, props, children) {
+				return '{nodeType:'+nodeType+',type:'+type+',props:{'+props+'},children:'+children+',_el:null}';
 			}
 		}
 	}
@@ -256,19 +271,7 @@
 	 * 
 	 * ---------------------------------------------------------------------------------
 	 */
-
-	/**
-	 * stringify vnode
-	 * 
-	 * @param  {number}   nodeType
-	 * @param  {(string)} type
-	 * @param  {Object[]} props
-	 * @param  {VNode[]}  children
-	 * @return {string}          
-	 */
-	function stringifyVNode (nodeType, type, props, children) {
-		return '{nodeType:'+nodeType+',type:'+type+',props:{'+props+'},children:'+children+',_el:null}';
-	}
+	
 
 	/**
 	 * stringify props
@@ -590,6 +593,10 @@
 
 		if (subject.element) {
 			VElement = subject.element;
+		}
+
+		if (subject.stringify) {
+			stringifyVNode = subject.stringify;
 		}
 	}
 

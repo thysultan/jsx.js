@@ -78,5 +78,8 @@ jsx.extend({
 	props: function (key, value, props, node) {
 		props[key] = value;
 	}
+	stringify: function (nodeType, type, props, children) {
+		return '{nodeType:'+nodeType+',type:'+type+',props:{'+props+'},children:'+children+',_el:null}';
+	}
 })
 ```
