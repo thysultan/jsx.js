@@ -2,6 +2,9 @@
 
 An extendable fast jsx parser without regex.
 
+- ~14kb minified
+- ~3 minified and gzipped
+
 ## API
 
 ### jsx.parse

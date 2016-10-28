@@ -337,20 +337,13 @@
  		var inElement      = false,  // everything between `<` and `/`
  			inTag          = false,  // everything between `<` and `>`
  			inProps        = false,  // everything between and `<tag ` and `>`
- 			inChildren     = false,  // everything between > and /
- 			inType         = false,  // everything between `<` and the first ` `
  			inText         = false,  // everything not of the above
  			result         = [],     // element store
- 			levelsArr            = [],     // buffer array of elements indexed by level
+ 			levelsArr      = [],     // buffer array of elements indexed by level
  			current        = null,   // current element
- 			level          = -1,
- 			jsx            = false,
- 			start          = '',
- 			end            = '',
- 			index          = 0;
+ 			level          = -1;
 
  		var input  = Stream(str);
- 		var output = '';
 
  		// while not end of file iterate through all the characters
          while (!input.eof()) {
@@ -527,7 +520,6 @@
  	 */
 	function transpileJSX (input) {
 		var output    = ''; // output string
-		var line      = ''; // current line
 		var blob      = ''; // blob of jsx string
 		var jsx       = false;
 		var previous  = '';
