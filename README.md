@@ -1,6 +1,6 @@
 # jsx.js
 
-An extendable and lightweight jsx parser without regex.
+An extendable and lightweight jsx parser without regex, without dependencies.
 
 - ~14kb un-minified
 - ~3kb minified
