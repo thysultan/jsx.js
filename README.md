@@ -1,6 +1,6 @@
 # jsx.js
 
-An extendable and lightweight jsx parser without regex
+An extendable and lightweight jsx parser without regex.
 
 - ~14kb un-minified
 - ~3kb minified
@@ -45,7 +45,8 @@ Internally the library uses three functions to determine the structure of the re
 for pushing new props.
 
 You can inject your own functions to use to create a structure that works with your prefered framework.
-The following is the logic of the default functions used, tailored by default for [Dio.js](https://github.com/thysultan/dio.js)
+This allows us to create pre-compiled object representations of the VNode for better performance rather than something like a
+`.createElement` call that presents it's own overhead. The following is the logic of the default functions used, tailored by default for [Dio.js](https://github.com/thysultan/dio.js)
 
 ```javascript
 jsx.extend({
