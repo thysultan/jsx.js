@@ -134,13 +134,31 @@
 	 		throwError(message + ' (' + line + ':' + col + ')');
 	 	}
 
+	 	// ignore everything until a certain point
+	 	function sleep (character, previous) {
+	 		if (previous === void 0) {	 			
+	 			while (!eof()) {
+	 				if (next() === character) {
+	 					break;
+	 				}
+	 			}
+	 		} else {
+	 			while (!eof()) { 
+ 					if (next() === character && lookout() === previous) {
+ 						break;
+ 					}
+ 				}
+	 		}
+	 	}
+
 	 	var pos = 0, line = 1, col = 0;
 
 	 	return { 
 	 		next:    next, 
 	 		peek:    peek, 
 	 		lookout: lookout, 
-	 		eof:     eof, 
+	 		eof:     eof,
+	 		sleep:   sleep,
 	 		panic:   panic 
 	 	};
 	}
@@ -170,14 +188,17 @@
 	}
 
 	/**
-	 * push children
+	 * pushs vnode to children stack
 	 * 
 	 * @param  {VNode}   child  
-	 * @param  {VNode[]} children
-	 * @param  {Object}  props
+	 * @param  {number}  level
+	 * @param  {VNode[]} result 
+	 * @param  {VNode[]} levelsArr
 	 */
-	function pushChildren (child, children) {
-		children[children.length] = child;
+	function pushChildren (child, result, level, levelsArr) {
+		var destination = level === 0 ? result : levelsArr[level - 1].children;
+
+		destination[destination.length] = child;
 	}
 
 	/**
@@ -249,9 +270,17 @@
 	 * @return {string}
 	 */
 	function stringifyChildren (nodeType, children) {
-		return nodeType === 3 ? 
-			'"' + children + '"': 
-			'[' + children.map(function (child) { return stringifyAST(child); }).join(',') + ']';
+		if (nodeType === 3) {
+			if (children.charAt(0) === '{') {
+				// js scope
+				return children.substr(1,children.length-2);
+			} else {
+				// plain string
+				return '"' + children + '"';
+			}
+		} else {
+			return "[" + children.map(function (child) { return stringifyAST(child); }).join(',') + ']';
+		}
 	}
 
 	/**
@@ -289,7 +318,7 @@
  			inType         = false,  // everything between `<` and the first ` `
  			inText         = false,  // everything not of the above
  			result         = [],     // element store
- 			arr            = [],     // buffer array of elements
+ 			levelsArr            = [],     // buffer array of elements indexed by level
  			current        = null,   // current element
  			level          = -1,
  			jsx            = false,
@@ -323,13 +352,8 @@
      			if (nextCharacter !== '/') {
      				// html comment
      				if (nextCharacter === '!') {
-     					// traverse to end of html comment
-     					while (!input.eof()) {
-     						// end when we react closing tag
-     						if (input.next() === '>') {
-     							break;
-     						}
-     					}
+     					// sleep untill
+     					input.sleep('>');
      				} else {
      					// init element, props
      					inElement = inTag = true;
@@ -341,31 +365,23 @@
      					// if nextCharater is uppercase VComponent, else VElement
      					current = (nextCharacter.toLowerCase() === nextCharacter ? VElement : VComponent)('', {}, []);
 
-     					pushChildren(current, level === 0 ? result : arr[level - 1].children);
+     					// push element to children stack
+     					pushChildren(current, result, level, levelsArr);
 
-     					arr[level] = current;
+     					// push new level
+     					levelsArr[level] = current;
      				}
      			}
      		} else if (character === '/') {
      			var nextCharacter = input.peek();
 
      			if (nextCharacter === '/') {
-     				// traverse to end of line comment
-     				while (!input.eof()) {
-     					if (input.next() === '\n') {
-     						// end when we react closing tag
-     						break;
-     					}
-     				}
+     				// sleep untill
+     				input.sleep('\n');
      			} else if (nextCharacter === '*') {
-     				// traverse to end of block comment
-     				while (!input.eof()) { 
-     					if (input.next() === '/' && input.lookout() === '*') {
-     						// end when we react closing tag
-     						break;
-     					}
-     				}
      				// block comments
+     				// sleep untill the previous and next character are the following
+     				input.sleep('/', '*');
      			} else {
      				// exit element, tag and props
      				inElement = inTag = inProps = false;
@@ -374,12 +390,7 @@
      				level--;
 
      				// traverse to the the closing tag
-     				while (!input.eof()) {
-     					if (input.next() === '>') {
-     						// end when we react closing tag
-     						break;
-     					}
-     				}
+     				input.sleep('>');
      			}
      		} else if (character === '>') {
      			// exit tag and props
@@ -432,32 +443,46 @@
  			} else {
  				// element type
  				if (inTag) {
- 					// // if first letter is uppercase, component
- 					// if (current.type.length === 0 && character.toLowerCase() !== character) {
- 					// 	current.nodeType = 2;
- 					// }
-
  					current.type += character;
  				} else if (current !== null) {
  					if (inText) {
- 						// push children to text node
- 						current.children += character;
- 					} else {								
+ 						if (character === '{') {
+ 							var chars = character;
+
+ 							// sleep untill end of sleeping text
+ 							while (!input.eof()) {
+ 								var char = input.next();
+
+ 								chars += char;
+
+ 								if (char === '}') {
+ 									// push text node to children stack
+ 									pushChildren(VText(chars), result, level, levelsArr);
+ 									break;
+ 								}		
+ 							}
+ 						} else {
+ 							// push children to text node
+ 							current.children += character;
+ 						}
+ 					} else {
  						inText = true;
  						level++;
 
  						// create new text node
  						current = VText(character);
 
- 						pushChildren(current, level === 0 ? result : arr[level-1].children);
+ 						// push element to children stack
+ 						pushChildren(current, result, level, levelsArr);
 
- 						arr[level] = current;
+ 						// push new level
+ 						levelsArr[level] = current;
  					}
  				}
  			}
-         }
+        }
 
-         return result;
+        return result;
  	}
 
 
@@ -496,8 +521,9 @@
 					output += '@jsx-placeholder' + char;
 
 					var ast = parseStringToAST(blob);
+					var str = stringifyAST(ast[0]);
 
-					// console.log(ast);
+					console.log(ast);
 					console.log(stringifyAST(ast[0]));
 				}
 				// else if (char !== '\n' && char !== '\t') {
