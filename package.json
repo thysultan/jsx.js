@@ -28,7 +28,7 @@
 		"url": "https://github.com/thysultan/jsx.js/issues"
 	},
 	"scripts": {
-		"test": ""
+		"test": "echo \"Error: no test specified\" && exit 1"
 	},
 	"files": ["jsx.min.js", "jsx.js"]
 }
