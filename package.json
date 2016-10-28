@@ -1,7 +1,7 @@
 {
 	"name": "jsx.js",
 	"main": "jsx.js",
-	"description": "a blazing fast, lightweight jsx parser",
+	"description": "An extendable and lightweight jsx parser without regex.",
 	"version": "0.1.0",
 	"homepage": "https://github.com/thysultan/jsx.js",
 	"license": "MIT",

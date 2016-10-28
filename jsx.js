@@ -7,7 +7,7 @@
  * /___/ 
  *
  * 
- * Jsx.js a blazing fast, lightweight jsx parser. 
+ * Jsx.js is an extendable and lightweight jsx parser without regex
  * https://github.com/thysultan/jsx.js
  * 
  * @licence MIT

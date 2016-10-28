@@ -1,6 +1,6 @@
 # jsx.js
 
-An extendable fast jsx parser without regex.
+An extendable and lightweight jsx parser without regex
 
 - ~14kb minified
 - ~3 minified and gzipped
