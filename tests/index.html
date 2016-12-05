@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title></title>
+</head>
+<body>
+	<script src="../jsx.js"></script>
+	<script>
+		var html = `
+		/* @jsx h */
+
+		<div className={css(styles.main)}>
+		    <header className={css(styles.header)}>
+		      <h1 className={css(styles.title)}>
+		        JSX Live Editor
+		      </h1>
+		    </header>
+		    <div className={css(styles.container)}>
+		      <Compiler />
+		    </div>
+			<div class="oh" checked></div>
+			<Component></Component>
+		</div>
+
+		return <B key="b"><A /></B>
+
+		return <div key="a">A</div>
+
+		var Foo = (<div className={css(styles.container)}>
+			<Compiler />
+		</div>)
+
+		var p = <p class={name}>hello world</p>;
+		`;
+
+		var start = performance.now();
+		var tree = jsx(html);
+		console.log(performance.now()-start, 'ms');
+		console.log(tree);
+	</script>
+</body>
+</html>

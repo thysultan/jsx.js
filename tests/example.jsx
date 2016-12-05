@@ -1,30 +1,24 @@
-var a = 0;
-var total = 1 + a;
+/* @jsx h */
 
-var template = (
-	<div class="oh" checked>
-		<p class={name}>hello world</p>
-		<Component></Component>
-		Hello World {this.state}
-		// we want {this.state} to get registerd as a new text node
-		<input />
+<div className={css(styles.main)}>
+    <header className={css(styles.header)}>
+      <h1 className={css(styles.title)}>
+        JSX Live Editor
+      </h1>
+    </header>
+    <div className={css(styles.container)}>
+      <Compiler />
+    </div>
+	<div class="oh" checked></div>
+	<Component></Component>
+</div>
 
-		// this comment line will get skipped, newlines also don't register
+return <B key="b"><A /></B>
 
-		/**
-		 * so will this comment block
-		 */
-		
-		<!-- and this html comment -->
-	</div>
-);
+return <div key="a">A</div>
 
-// outside of the jsx context everything is back to normal
+var Foo = (<div className={css(styles.container)}>
+	<Compiler />
+</div>)
 
-/**
- * this comment block will show
- */
-
-return (
-	<p class={name}>hello world</p>
-);
+var p = <p class={name}>hello world</p>;

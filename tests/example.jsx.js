@@ -1,14 +1,11 @@
-var a = 0;
-var total = 1 + a;
+/* @jsx h */
 
-var template = (
-	{nodeType:1,type:"div",props:{"class": "oh", "checked": true},children:[{nodeType:1,type:"p",props:{"class": name},children:[{nodeType:3,type:"text",props:{},children:"hello world",_el:null}],_el:null},{nodeType:1,type:Component,props:{},children:[],_el:null},{nodeType:3,type:"text",props:{},children:"Hello World ",_el:null},{nodeType:3,type:"text",props:{},children:this.state,_el:null},{nodeType:1,type:"input",props:{},children:[],_el:null}],_el:null});
+h('div', {'className': css(styles.main)}, [h('header', {'className': css(styles.header)}, [h('h1', {'className': css(styles.title)}, ['JSX Live Editor'])]),h('div', {'className': css(styles.container)}, [h(Compiler, null, null)]),h('div', {'class': "oh", 'checked': true}, null),h(Component, null, null)])
 
-// outside of the jsx context everything is back to normal
+return h(B, {'key': "b"}, [h(A, null, null)])
 
-/**
- * this comment block will show
- */
+return h('div', {'key': "a"}, ['A'])
 
-return (
-	{nodeType:1,type:"p",props:{"class": name},children:[{nodeType:3,type:"text",props:{},children:"hello world",_el:null}],_el:null});
+var Foo = (h('div', {'className': css(styles.container)}, [h(Compiler, null, null)]))
+
+var p = h('p', {'class': name}, ['hello world']);

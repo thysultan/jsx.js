@@ -1,8 +1,8 @@
 {
 	"name": "jsx.js",
 	"main": "jsx.js",
-	"description": "An extendable and lightweight jsx parser without regex.",
-	"version": "0.1.0",
+	"description": "a light and extendable jsx compiler",
+	"version": "0.2.0",
 	"homepage": "https://github.com/thysultan/jsx.js",
 	"license": "MIT",
 	"author": {
@@ -28,7 +28,7 @@
 		"url": "https://github.com/thysultan/jsx.js/issues"
 	},
 	"scripts": {
-		"transpile": "node ./index.js",
+		"jsx": "node ./index.js",
 		"test": "echo \"Error: no test specified\" && exit 1"
 	},
 	"bin": {

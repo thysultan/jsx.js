@@ -7,613 +7,610 @@
  * /___/ 
  *
  * 
- * Jsx.js is an extendable and lightweight jsx parser without regex
+ * jsx.js is an extendable and lightweight jsx compiler
  * https://github.com/thysultan/jsx.js
  * 
  * @licence MIT
  */
 (function (global, factory) {
-	if (typeof exports === 'object' && typeof module !== 'undefined') {
-		module.exports = factory();
-	} else if (typeof define === 'function' && define.amd) {
-		define('jsx', factory);
-	} else {
-		global.jsx = factory();
-	}
+    if (typeof exports === 'object' && typeof module !== 'undefined') {
+        module.exports = factory();
+    } else if (typeof define === 'function' && define.amd) {
+        define('jsx', factory);
+    } else {
+        global.jsx = factory();
+    }
 }(this, function () {
-	'use strict';
-
-	var VHelpers       = VFactory(),
-
-		VText          = VHelpers.VText,
-		VElement       = VHelpers.VElement,
-		VComponent     = VHelpers.VComponent,
-		VProps         = VHelpers.VProps,
-
-		stringifyVNode = VHelpers.VNode,
-
-		emptyObject = {},
-		boolProps   = {
-	 	async:    0,  autofocus:  0,  autoplay:  0,  checked:    0,  allowFullscreen: 0,   
-	 	controls: 0,  declare:    0,  default:   0,  multiple:   0,  defaultMuted: 0,     
-	 	defer:    0,  disabled:   0,  draggable: 0,  enabled:    0,  formNoValidate: 0,   
-	 	inert:    0,  isMap:      0,  itemScope: 0,  loop:       0,  defaultChecked: 0,         
-	 	noShade:  0,  noValidate: 0,  noWrap:    0,  open:       0,  pauseOnExit: 0,      
-	 	reversed: 0,  scoped:     0,  seamless:  0,  selected:   0,  typeMustMatch: 0,        
-	 	sortable: 0,  visible:    0,  trueSpeed: 0,  noResize:   0,  indeterminate: 0, 
-	 	noHref:   0,  required:   0,  translate: 0,  spellcheck: 0,  defaultSelected: 0,
-	 	compact:  0,  hidden:     0,  muted:     0,  readOnly:   0
-	};
-
-
-	/**
-	 * ---------------------------------------------------------------------------------
-	 * 
-	 * factories
-	 * 
-	 * ---------------------------------------------------------------------------------
-	 */
-	
-
-	function VFactory () {
-		return {
-			/**
-			 * vtext factory
-			 * 
-			 * @param {string} children
-			 */
-			VText: function VText (children) {
-			 	return {
-			 		nodeType: 3,
-			 		type: 'text',
-			 		props: emptyObject,
-			 		children: children || '',
-			 		_el: null
-			 	};
-			},
-
-			/**
-			 * vnode factory
-			 * 
-			 * @param {string}  type
-			 * @param {Object}  props
-			 * @param {VNode[]} children
-			 */
-			VElement: function VElement (type, props, children) {
-			 	return {
-			 		nodeType: 1,
-			 		type: type || '',
-			 		props: props || {},
-			 		children: children || [],
-			 		_el: null
-			 	};
-			},
-
-			/**
-			 * vcomponent factory 
-			 * 
-			 * @param {string}  type
-			 * @param {Object}  props
-			 * @param {VNode[]} children
-			 */
-			VComponent: function VComponent (type, props, children) {
-				return {
-			 		nodeType: 1,
-			 		type: type || '',
-			 		props: props || {},
-			 		children: children || [],
-			 		_el: null
-			 	}; 
-			},
-
-			/**
-			 * push props
-			 * 
-			 * @param  {string} key  
-			 * @param  {any}    value
-			 * @param  {Object} props
-			 */
-			VProps: function VProps (key, value, props, node) {
-				props[key] = value;
-			},
-
-			/**
-			 * stringify vnode
-			 * 
-			 * @param  {number}   nodeType
-			 * @param  {(string)} type
-			 * @param  {Object[]} props
-			 * @param  {VNode[]}  children
-			 * @return {string}          
-			 */
-			VNode: function VNode (type, props, children, nodeType) {
-				return '{nodeType:'+nodeType+',type:'+type+',props:{'+props+'},children:'+children+',_el:null}';
-			}
-		}
-	}
-
-	/**
-	 * input stream factory
-	 * 
-	 * @param {string} input
-	 */
-	function Stream (input) {
-	 	// peek at the next character
-	 	function peek () {
-	 		return input.charAt(pos);
-	 	}
-
-	 	// peek in any direction
-	 	function lookout () {
-	 		return input.charAt(pos-2);
-	 	}
-
-	 	// move on to the next character
-	 	function next () {
-	 		var char = input[pos++];
-
-	 		if (char === '\n') {
-	 			line++, col = 0;
-	 		} else {
-	 			col++;
-	 		}
-
-	 		return char;
-	 	}
-
-	 	// end of file
-	 	function eof () {
-	 		return peek() === '';
-	 	}
-
-	 	// throw error
-	 	function panic (message) {
-	 		throwError(message + ' (' + line + ':' + col + ')');
-	 	}
-
-	 	// ignore everything until a certain point
-	 	function sleep (character, previous) {
-	 		if (previous === void 0) {	 			
-	 			while (!eof()) {
-	 				if (next() === character) {
-	 					break;
-	 				}
-	 			}
-	 		} else {
-	 			while (!eof()) { 
- 					if (next() === character && lookout() === previous) {
- 						break;
- 					}
- 				}
-	 		}
-	 	}
-
-	 	var pos = 0, line = 1, col = 0;
-
-	 	return { 
-	 		next:    next, 
-	 		peek:    peek, 
-	 		lookout: lookout, 
-	 		eof:     eof,
-	 		sleep:   sleep,
-	 		panic:   panic 
-	 	};
-	}
-
-	
-	/**
-	 * ---------------------------------------------------------------------------------
-	 * 
-	 * helpers
-	 * 
-	 * ---------------------------------------------------------------------------------
-	 */
-
-	/**
-	 * pushs vnode to children stack
-	 * 
-	 * @param  {VNode}   child  
-	 * @param  {number}  level
-	 * @param  {VNode[]} result 
-	 * @param  {VNode[]} levelsArr
-	 */
-	function pushProps (key, value, props, node) {
-		if (value === '' && boolProps.hasOwnProperty(key)) {
-			value = true;
-		} else if (value.charAt(0) === '{') {
-			value = value.substr(1, value.length-2);
-		}
-
-
-		VProps(key, value, props, node);
-	}
-
-	/**
-	 * pushs vnode to children stack
-	 * 
-	 * @param  {VNode}   child  
-	 * @param  {number}  level
-	 * @param  {VNode[]} result 
-	 * @param  {VNode[]} levelsArr
-	 */
-	function pushChildren (child, result, level, levelsArr) {
-		var destination = level === 0 ? result : levelsArr[level - 1].children;
-
-		destination[destination.length] = child;
-	}
-
-	/**
-	 * hoisted for in helper
-	 * 
-	 * @param  {Object}   subject 
-	 * @param  {function} func
-	 */
-	function forIn (subject, func) {
-		for (var name in subject) {
-			func(name, subject[name], subject);
-		}
-	}
-
-	/**
-	 * throw helper
-	 * 
-	 * @param  {string} message
-	 */
-	function throwError (message) {
-		throw new Error(message);
-	}
-
-
-	/**
-	 * ---------------------------------------------------------------------------------
-	 * 
-	 * stringify
-	 * 
-	 * ---------------------------------------------------------------------------------
-	 */
-	
-
-	/**
-	 * stringify props
-	 * 
-	 * @param  {Object} props
-	 * @return {string}
-	 */
-	function stringifyProps (props) {
-		var output = '', first = true;
-
-		forIn(props, function (name, prop) {
-			var value = '"' + name + '": ' + prop;
-
-			output += first ? (first = false, value) : ', ' + value;
-		});
-
-		return output;
-	}
-
-	/**
-	 * stringify children
-	 * 
-	 * @param  {number} nodeType
-	 * @param  {array}  children
-	 * @return {string}
-	 */
-	function stringifyChildren (nodeType, children) {
-		if (nodeType === 3) {
-			if (children.charAt(0) === '{') {
-				// js scope
-				return children.substr(1,children.length-2);
-			} else {
-				// plain string
-				return '"' + children + '"';
-			}
-		} else {
-			return "[" + children.map(function (child) { return stringifyAST(child); }).join(',') + ']';
-		}
-	}
-
-	/**
-	 * stringify abstract syntax tree (AST)
-	 * 
-	 * @param  {Object} subject
-	 * @return {string}
-	 */
-	function stringifyAST (subject) {
-		var nodeType  = subject.nodeType,
-			props     = stringifyProps(subject.props), 
-			children  = stringifyChildren(nodeType, subject.children);
-
-		var candidate = subject.type,
-			type      = candidate.toLowerCase() === candidate ? ('"' + candidate + '"') : candidate;
-
-		return stringifyVNode(type, props, children, nodeType || null);
-	}
-
-
-	/**
-	 * ---------------------------------------------------------------------------------
-	 * 
-	 * parser
-	 * 
-	 * ---------------------------------------------------------------------------------
-	 */
-	
-
- 	function parseStringToAST (str) {
- 		var inElement = false,  // everything between `<` and `/`
- 			inTag     = false,  // everything between `<` and `>`
- 			inProps   = false,  // everything between and `<tag ` and `>`
- 			inText    = false,  // everything not of the above
- 			result    = [],     // element store
- 			levelsArr = [],     // buffer array of elements indexed by level
- 			current   = null,   // current element
- 			level     = -1;
-
- 		var input     = Stream(str);
-
- 		// while not end of file iterate through all the characters
-         while (!input.eof()) {
-         	var character = input.next();
-
-         	if (character === '\t' || character === '\n') {
-         		continue;
-         	}
-
-     		if (character === '<') {
-     			// if the previous current element was a text node
-     			// since text nodes do not have closing tags
-     			// we close them when a new tag element is found
-     			// which means we have to go back one level up the tree
-     			if (inText) {
-     				inText = false;
-     				level--;
-     			}
-
-     			var nextCharacter = input.peek();
-
-     			if (nextCharacter !== '/') {
-     				// html comment
-     				if (nextCharacter === '!') {
-     					// sleep untill
-     					input.sleep('>');
-     				} else {
-     					// init element, props
-     					inElement = inTag = true;
-
-     					// encounter opening element identifier go one level down the tree
-     					level++;
-
-     					// create new element, if nextCharater is uppercase VComponent, else VElement
-     					current = (nextCharacter.toLowerCase() === nextCharacter ? VElement : VComponent)('', {}, []);
-
-     					// push element to children stack
-     					pushChildren(current, result, level, levelsArr);
-
-     					// push new level
-     					levelsArr[level] = current;
-     				}
-     			}
-     		} else if (character === '/') {
-     			var nextCharacter = input.peek();
-
-     			if (nextCharacter === '/') {
-     				// sleep untill
-     				input.sleep('\n');
-     			} else if (nextCharacter === '*') {
-     				// block comments
-     				// sleep untill the previous and next character are the following
-     				input.sleep('/', '*');
-     			} else {
-     				// exit element, tag and props
-     				inElement = inTag = inProps = false;
-
-     				// encounter closing element identifier, go one level up the tree
-     				level--;
-
-     				// traverse to the the closing tag
-     				input.sleep('>');
-     			}
-     		} else if (character === '>') {
-     			// exit tag and props
-     			inTag = inProps = false;
-     		} else if (inTag && character === ' ') {
- 				// init props
- 				inProps = true;
-     		} else if (inProps) {
-     			// traverse and register all props
- 				var char  = character, 
- 					props = current.props, 
- 					key   = '',
- 					value = '',
- 					side  = 0;
-
- 				while (true) {
- 					// side = 1 --> value, side = 0 ---> key
- 					if (char === '=') {
- 						side  = 1;
- 					} else if (char === ' ') {
- 						pushProps(key, value, props, current);
-
- 						// new prop, reset
- 						side  = 0;
- 						key   = '',
- 						value = '';
- 					} else {
- 						// key, value
- 						if (side === 0) {
- 							key   += char;
- 						} else {
- 							value += char;
- 						}
- 					}
-
- 					// peek at next character
- 					var next = input.peek();
-
- 					// end of props if next character is > or current is / and next is >
- 					// this handles both
- 					// <input /> and <input >
- 					if (next === '>' || (current === '/' && next === '>')) {
- 						if (key !== '') {
- 							pushProps(key, value, props, current);
- 						}
-
- 						break;
- 					}
-
- 					char = input.next();
- 				}
- 			} else {
- 				// element type
- 				if (inTag) {
- 					current.type += character;
- 				} else if (current !== null) {
- 					if (inText) {
- 						if (character === '{') {
- 							var chars = character;
-
- 							// sleep untill end of sleeping text
- 							while (!input.eof()) {
- 								var char = input.next();
-
- 								chars += char;
-
- 								if (char === '}') {
- 									// push text node to children stack
- 									pushChildren(VText(chars), result, level, levelsArr);
- 									break;
- 								}		
- 							}
- 						} else {
- 							// push children to text node
- 							current.children += character;
- 						}
- 					} else {
- 						inText = true;
- 						level++;
-
- 						// create new text node
- 						current = VText(character);
-
- 						// push element to children stack
- 						pushChildren(current, result, level, levelsArr);
-
- 						// push new level
- 						levelsArr[level] = current;
- 					}
- 				}
- 			}
+    'use strict';
+
+
+    // regular expressions
+    // var regJsx     = /(<[\w][^\0]*?[^\/]>[^\0]*?<\/.*>)(?:\n\n|\)\n\n|;)/g;
+    var regJsx     = /(.?|\(\n)(<[\w][^\0]*?[^\/]>[^\0]*?<\/.*>)(\n\n|\)\n\n|\);|\n\)|;|\n\}| }|}\n)/g;
+    var regSpace   =  /  /g;
+
+    var VHelpers   = factory();
+
+    // VNode constructors
+    var VText      = VHelpers.VText;
+    var VElement   = VHelpers.VElement;
+    var VComponent = VHelpers.VComponent;
+    var VProps     = VHelpers.VProps;
+    var VNode      = VHelpers.VNode;
+
+    // pragma
+    var pragma     = false;
+
+    var _txPragma  = 'VText';
+    var _elPragma  = 'VElement';
+    var _cmPragma  = 'VComponent';
+
+    var regPragma  = /\/\* +?@jsx +?(.+) \*\//g;
+    var txPragma   = _txPragma;
+    var elPragma   = _elPragma;
+    var cmPragma   = _cmPragma;
+
+    // boolean attributes
+    var boolAttr   = {
+        async:    true,  autofocus:  true,  autoplay:  true,  checked:    true,  allowFullscreen: true,   
+        controls: true,  declare:    true,  default:   true,  multiple:   true,  defaultMuted:    true,     
+        defer:    true,  disabled:   true,  draggable: true,  enabled:    true,  formNoValidate:  true,   
+        inert:    true,  isMap:      true,  itemScope: true,  loop:       true,  defaultChecked:  true,         
+        noShade:  true,  noValidate: true,  noWrap:    true,  open:       true,  pauseOnExit:     true,      
+        reversed: true,  scoped:     true,  seamless:  true,  selected:   true,  typeMustMatch:   true,        
+        sortable: true,  visible:    true,  trueSpeed: true,  noResize:   true,  indeterminate:   true, 
+        noHref:   true,  required:   true,  translate: true,  spellcheck: true,  defaultSelected: true,
+        compact:  true,  hidden:     true,  muted:     true,  readOnly:   true
+    };
+
+
+    /**
+     * ---------------------------------------------------------------------------------
+     * 
+     * factories
+     * 
+     * ---------------------------------------------------------------------------------
+     */
+    
+
+    function factory () {
+        return {
+            /**
+             * text node constructor
+             * 
+             * @param {string} children
+             */
+            VText: function VText (children) {
+                return {
+                    nodeType: 3,
+                    type: 'text',
+                    props: {},
+                    children: children || '',
+                };
+            },
+
+            /**
+             * element node constructor
+             * 
+             * @param {string}  type
+             * @param {Object}  props
+             * @param {VNode[]} children
+             */
+            VElement: function VElement (type, props, children) {
+                return {
+                    nodeType: 1,
+                    type: type || '',
+                    props: props || {},
+                    children: children || []
+                };
+            },
+
+            /**
+             * component node constructor 
+             * 
+             * @param {string}  type
+             * @param {Object}  props
+             * @param {VNode[]} children
+             */
+            VComponent: function VComponent (type, props, children) {
+                return {
+                    nodeType: 2,
+                    type: type || '',
+                    props: props || {},
+                    children: children || []
+                }; 
+            },
+
+            /**
+             * push props
+             * 
+             * @param  {string} key  
+             * @param  {any}    value
+             * @param  {Object} props
+             */
+            VProps: function VProps (key, value, props, node) {
+                props[key] = value;
+            },
+
+            /**
+             * stringify VNode
+             * 
+             * @param  {number}   nodeType
+             * @param  {(string)} type
+             * @param  {Object[]} props
+             * @param  {VNode[]}  children
+             * @return {string}          
+             */
+            VNode: function VNode (type, props, children, nodeType) {
+                if (nodeType === 3) {
+                    return pragma ? children : txPragma+'('+children+')';
+                }
+
+                var _props = props ? '{' + props + '}' : 'null';
+                var _children = children ? '['+children+']' : 'null';
+
+                if (nodeType === 1) {
+                    return elPragma + '(' + type + ', ' + _props +', ' + _children + ')';
+                } else {
+                    return cmPragma + '(' + type + ', ' + _props +', ' + _children + ')';
+                }
+            }
+        }
+    }
+
+
+    /**
+     * input stream factory
+     * 
+     * @param  {string} input
+     * @return {Object}
+     */
+    function input (str) {
+        // peek at the next character
+        function peek () {
+            return str[pos];
+        }
+
+        // move on to the next character
+        function next () {
+            return str[pos++];
+        }
+
+        // end of file
+        function eof () {
+            return pos === length;
+        }
+
+        // ignore everything until a certain point
+        function sleep (character, previous) {
+            if (previous === void 0) {              
+                while (pos !== length) {
+                    if (str[pos++].charCodeAt(0) === character) {
+                        break;
+                    }
+                }
+            } else {
+                while (pos !== length) { 
+                    if (str[pos++].charCodeAt(0) === character && str[pos-2].charCodeAt(0) === previous) {
+                        break;
+                    }
+                }
+            }
+        }
+
+        var pos = 0, length = str.length-1;
+
+        return {next: next, peek: peek, eof: eof, sleep: sleep};
+    }
+
+    
+    /**
+     * ---------------------------------------------------------------------------------
+     * 
+     * helpers
+     * 
+     * ---------------------------------------------------------------------------------
+     */
+
+
+    /**
+     * push props to vnode
+     * 
+     * @param  {string}  key  
+     * @param  {any}     value
+     * @param  {Object}  props 
+     * @param  {VNode}   node
+     */
+    function pushProp (key, value, props, node) {
+        if (value === '' && boolAttr[key]) {
+            value = true;
+        } else if (value.charAt(0) === '{') {
+            value = value.substr(1, value.length-2);
+        }
+
+
+        VProps(key, value, props, node);
+    }
+
+    /**
+     * push vnodes to children stack
+     * 
+     * @param  {VNode}   child  
+     * @param  {VNode[]} result 
+     * @param  {number}  level
+     * @param  {VNode[]} stack
+     */
+    function pushChild (child, result, level, stack) {
+        var destination = level === 0 ? result : stack[level - 1].children;
+
+        destination[destination.length] = child;
+    }
+
+
+    /**
+     * ---------------------------------------------------------------------------------
+     * 
+     * stringify
+     * 
+     * ---------------------------------------------------------------------------------
+     */
+    
+
+    /**
+     * stringify props
+     * 
+     * @param  {Object} props
+     * @return {string}
+     */
+    function strProps (props) {
+        var output = '', first = true;
+
+        for (var name in props) {
+            var prop = props[name];
+            var value = "'" + name + "': " + prop;
+
+            output += first ? (first = false, value) : ', ' + value;
+        }
+
+        return output;
+    }
+
+
+    /**
+     * stringify children
+     * 
+     * @param  {number} nodeType
+     * @param  {array}  children
+     * @return {string}
+     */
+    function strChildren (nodeType, children) {
+        if (nodeType === 3) {
+            if (children.charAt(0) === '{') {
+                // js scope
+                return children.substr(1, children.length-2);
+            } else {
+                // plain string
+                return "'" + children + "'";
+            }
+        } else {
+            var length = children.length;
+            var _children = '';
+
+            for (var i = 0; i < length; i++) {
+                _children += (i === 0 ? '' : ',') + strNode(children[i]);
+            }
+
+            return _children;
+        }
+    }
+
+
+    /**
+     * stringify abstract syntax tree (AST)
+     * 
+     * @param  {Object} subject
+     * @return {string}
+     */
+    function strNode (subject) {
+        var nodeType  = subject.nodeType;
+        var props     = strProps(subject.props);
+        var children  = strChildren(nodeType, subject.children);
+
+        var candidate = subject.type;
+        var type      = candidate.toLowerCase() === candidate ? ("'" + candidate + "'") : candidate;
+
+        return VNode(type, props, children, nodeType);
+    }
+
+
+    /**
+     * ---------------------------------------------------------------------------------
+     * 
+     * parser
+     * 
+     * ---------------------------------------------------------------------------------
+     */
+    
+
+    /**
+     * parse string to ast
+     * 
+     * @param  {string} str
+     * @return {Any[VNode]}    
+     */
+    function parse (str) {
+        var inElem    = false;  // everything between `<` and `/`
+        var inTag     = false;  // everything between `<` and `>`
+        var inProps   = false;  // everything between `<tag ` and `>`
+        var inText    = false;  // everything not of the above
+        var result    = [];     // element store
+        var stack     = [];     // buffer array of elements indexed by level
+        var current   = null;   // current element
+        var level     = -1;     // level in the tree
+
+        var stream = input(str);
+        var next   = stream.next;
+        var peek   = stream.peek;
+        var sleep  = stream.sleep;
+        var eof    = stream.eof;
+
+        while (!eof()) {
+            var character = next();
+            var code = character.charCodeAt(0);
+
+            // ` `
+            if (code === 32 && peek().charCodeAt() === 32) {
+                continue;
+            }
+
+            // \t, \n
+            if (code === 9 || code === 10) {
+                continue;
+            }
+
+            // <
+            if (code === 60) {
+                // if the previous current element was a text node
+                // since text nodes do not have closing tags
+                // we close them when a new tag element is found
+                // which means we have to go back one level up the tree
+                if (inText) {
+                    inText = false;
+                    level--;
+                }
+
+                var nextchar = peek();
+                var nextcode = nextchar.charCodeAt(0);
+
+                // /
+                if (nextcode !== 47) {
+                    // html comment
+                    if (nextcode === 33) {
+                        // sleep untill > character
+                        sleep(62);
+                    } else {
+                        // init element, props
+                        inElem = inTag = true;
+
+                        // encounter opening element identifier go one level down the tree
+                        level++;
+
+                        // create new element, if nextCharater is uppercase VComponent, else VElement
+                        current = (nextchar.toLowerCase() === nextchar ? VElement : VComponent)('', {}, []);
+
+                        // push element to children stack
+                        pushChild(current, result, level, stack);
+
+                        // push new level
+                        stack[level] = current;
+                    }
+                }
+            } 
+            // /
+            else if (code === 47) {
+                var nextchar = peek();
+                var nextcode = nextchar.charCodeAt(0);
+
+                // /
+                if (nextcode === 47) {
+                    // sleep untill \n
+                    sleep(10);
+                } 
+                // *
+                else if (nextcode === 42) {
+                    // block comments
+                    // sleep until the previous and next character are '/' and '*'
+                    sleep(47, 42);
+                } 
+                else {
+                    // exit element, tag and props
+                    inElem = inTag = inProps = false;
+
+                    // encounter closing element identifier, go one level up the tree
+                    level--;
+
+                    // traverse to the the closing tag '>'
+                    sleep(62);
+                }
+            } 
+            // > 
+            else if (code === 62) {
+                // exit tag and props
+                inTag = inProps = false;
+            }
+            // ` ` 
+            else if (inTag && code === 32) {
+                // init props
+                inProps = true;
+            } 
+            else if (inProps) {
+                // traverse and register all props
+                var char  = character;
+                var props = current.props;
+                var key   = '';
+                var value = '';
+
+                // side = false --> value, side = true ---> key
+                var side = true;
+
+                while (true) {
+                    var _code = char.charCodeAt(0);
+
+                    // =
+                    if (_code === 61) {
+                        side = false;
+                    }
+                    // ` ` 
+                    else if (_code === 32) {
+                        pushProp(key, value, props, current);
+
+                        // new prop, reset
+                        side = true; key = value = '';
+                    } else {
+                        // key, value
+                        side ? key += char : value += char;
+                    }
+
+                    // peek at next character
+                    var nextcode = peek().charCodeAt(0);
+
+                    // end of props if next character is > or current is / and next character is >
+                    // this handles both
+                    // <input /> and <input>
+                    // >, /, >
+                    if (nextcode === 62 || (_code === 47 && nextcode === 62)) {
+                        if (key !== '' && key !== '/') {
+                            pushProp(key, value, props, current);
+                        }
+
+                        break;
+                    }
+
+                    char = next();
+                }
+            } 
+            else {
+                // element type
+                if (inTag) {
+                    current.type += character;
+                } else if (current !== null) {
+                    if (inText) {
+                        if (character === '{') {
+                            var chars = character;
+
+                            // sleep until end }
+                            while (!eof()) {
+                                var char = next();
+
+                                chars += char;
+
+                                // }
+                                if (char.charCodeAt(0) === 125) {
+                                    // push text node to children stack
+                                    pushChild(VText(chars), result, level, stack);
+                                    break;
+                                }       
+                            }
+                        } else {
+                            // push children to text node
+                            current.children += character;
+                        }
+                    } else {
+                        inText = true;
+                        level++;
+
+                        // create new text node
+                        current = VText(character);
+
+                        // push element to children stack
+                        pushChild(current, result, level, stack);
+
+                        // push new level
+                        stack[level] = current;
+                    }
+                }
+            }
         }
 
         return result;
- 	}
+    }
 
 
- 	/**
- 	 * ---------------------------------------------------------------------------------
- 	 * 
- 	 * transformer
- 	 * 
- 	 * ---------------------------------------------------------------------------------
- 	 */
+    /**
+     * ---------------------------------------------------------------------------------
+     * 
+     * extend
+     * 
+     * ---------------------------------------------------------------------------------
+     */
+    
+
+    /**
+     * allows us to inject a function used 
+     * to construct the structure of a VNode object
+     *  
+     * @param  {Object<string, function>} subject
+     */
+    function extender (subject) {
+        subject.text && (VText = subject.text);
+        subject.component && (VComponent = subject.component);
+        subject.element && (VElement = subject.element);
+        subject.stringify && (VNode = subject.stringify);
+    }
 
 
- 	/**
- 	 * transpile input with jsx to js
- 	 * 
- 	 * @param  {string} input
- 	 * @return {string}
- 	 */
-	function transpileJSX (input) {
-		var output    = ''; // output string
-		var blob      = ''; // blob of jsx string
-		var jsx       = false;
-		var previous  = '';
-
-		// find jsx locations
-		for (var i = 0, len = input.length; i < len; i++) {
-			var char = input.charAt(i);
-
-			// within jsx block
-			if (jsx) {
-				if (char === ')' && previous === '>') {
-					jsx = false;
-					output += stringifyAST(parseStringToAST(blob)[0]) + char;
-				} else {
-					if (char !== '\t') {
-						blob += char;
-
-						// non whitespace previous character
-						if (char !== ' ' && char !== '\n') {
-							previous = char;
-						}
-					}
-				}
-			} 
-			else if (!jsx) {
-				var next = input.charAt(i+1);
-
-				// if current character `<` and next character not ' ' && '!' start jsx
-				if (char === '<' && next !== ' ' && next !== '!') {
-					jsx = true;
-					blob = char;
-				} else {
-					output += char;
-				}
-			}
-		}
-
-		return output;
-	}
+    /**
+     * ---------------------------------------------------------------------------------
+     * 
+     * transformer
+     * 
+     * ---------------------------------------------------------------------------------
+     */
 
 
-	/**
-	 * ---------------------------------------------------------------------------------
-	 * 
-	 * extend
-	 * 
-	 * ---------------------------------------------------------------------------------
-	 */
-	
-
-	/**
-	 * allows us to inject a function used 
-	 * to construct the structure of a VNode object
-	 *  
-	 * @param  {Object} subject
-	 */
-	function extendVNode (subject) {
-		if (subject.text) {
-			VText = subject.text;
-		}
-
-		if (subject.component) {
-			VComponent = subject.component;
-		}
-
-		if (subject.element) {
-			VElement = subject.element;
-		}
-
-		if (subject.stringify) {
-			stringifyVNode = subject.stringify;
-		}
-	}
+    /**
+     * transpiler
+     * 
+     * @param  {string} match
+     * @param  {string} group1
+     * @param  {string} group2
+     * @param  {string} group3
+     * @return {string}        
+     */
+    function transpiler (match, group1, group2, group3) {
+        return group1 + strNode(parse(group2.replace(regSpace, ''))[0]) + group3;
+    }
 
 
-	/**
-	 * ---------------------------------------------------------------------------------
-	 * 
-	 * exports
-	 * 
-	 * ---------------------------------------------------------------------------------
-	 */
-	
+    /**
+     * ---------------------------------------------------------------------------------
+     * 
+     * exports
+     * 
+     * ---------------------------------------------------------------------------------
+     */
+    
 
-	return {
-		parse:     parseStringToAST,
-		transpile: transpileJSX,
-		stringify: stringifyAST,
-		extend:    extendVNode
-	};
+    /**
+     * jsx
+     * 
+     * @param  {string} str
+     * @param  {(undefined|Object<string, function>)} extend
+     * @return {string}
+     */
+    return function jsx (str, extend) {
+        if (extend !== void 0) {
+            extender(extend);
+        }
+
+        var custom = regPragma.exec(str);
+
+        if (custom !== null) {
+            pragma   = true;
+            cmPragma = elPragma = custom[1];
+            txPragma = '';
+        }
+
+        return str.replace(regJsx, transpiler);
+    }
 }));

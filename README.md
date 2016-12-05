@@ -1,55 +1,24 @@
 # jsx.js
 
-An extendable and lightweight jsx parser without regex, without dependencies.
+a light and extendable jsx compiler.
 
-- ~14kb un-minified
 - ~3kb minified
-- ~2kb minified and gzipped
+- ~2kb minified + gzipped
 
 ## API
 
-### jsx.parse
-
 ```javascript
-jsx.parse({string}) => ({VNode[]})
+jsx(
+	str, {string} 
+	extend: {Object<string, function>}
+);
 ```
 
-This method recieves a string and parsers to create a AST representation of the jsx structure
-
-### jsx.transpile
-
-```javascript
-jsx.transpile({string}) => ({string})
-```
-
-Where jsx might receive a short string of just the relevant parts this method accepts anything
-finds the jsx code and replaces it with javascript code and returns the new string.
-
-
-### jsx.stringify
+This method recieves a string and optional extend object that is used to create
+a custom mapping for the javascript output, for example...
 
 ```javascript
-jsx.stringify({string}) => ({VNode[]})
-```
-
-Takes an AST and converts it to a string, internally `jsx.transpile` uses both this and
-`jsx.parse` to generate its ouput.
-
-### jsx.extend
-
-```javascript
-jsx.extend({Object}) => ()
-```
-Internally the library uses three functions to determine the structure of the resulting element/node
-`VComponent` that handles component, `VElement` for elements and `VText` for text nodes and `VProps`
-for pushing new props.
-
-You can inject your own functions to use to create a structure that works with your prefered framework.
-This allows us to create pre-compiled object representations of the VNode for better performance rather than something like a
-`.createElement` call that presents it's own overhead. The following is the logic of the default functions used, tailored by default for [Dio.js](https://github.com/thysultan/dio.js)
-
-```javascript
-jsx.extend({
+jsx(str, {
 	text: function (children) {
 	 	return {
 	 		nodeType: 3,
@@ -83,5 +52,7 @@ jsx.extend({
 	stringify: function (type, props, children, nodeType) {
 		return '{nodeType:'+nodeType+',type:'+type+',props:{'+props+'},children:'+children+',_el:null}';
 	}
-})
+});
 ```
+
+If the input string has a pragma comment, for example`/** @jsx h */` it will use that for the output mapping.
