@@ -2,7 +2,7 @@
 	"name": "jsx.js",
 	"main": "jsx.js",
 	"description": "a light and extendable jsx compiler",
-	"version": "0.2.0",
+	"version": "0.2.1",
 	"homepage": "https://github.com/thysultan/jsx.js",
 	"license": "MIT",
 	"author": {

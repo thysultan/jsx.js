@@ -7,8 +7,7 @@
  * /___/ 
  *
  * 
- * jsx.js is an extendable and lightweight jsx compiler
- * https://github.com/thysultan/jsx.js
+ * an extendable and lightweight jsx compiler
  * 
  * @licence MIT
  */
@@ -25,7 +24,6 @@
 
 
     // regular expressions
-    // var regJsx     = /(<[\w][^\0]*?[^\/]>[^\0]*?<\/.*>)(?:\n\n|\)\n\n|;)/g;
     var regJsx     = /(.?|\(\n)(<[\w][^\0]*?[^\/]>[^\0]*?<\/.*>)(\n\n|\)\n\n|\);|\n\)|;|\n\}| }|}\n)/g;
     var regSpace   =  /  /g;
 
