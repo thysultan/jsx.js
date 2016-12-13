@@ -145,7 +145,7 @@
                 }
 
                 var _props = props ? '{' + props + '}' : 'null';
-                var _children = children ? '['+children+']' : 'null';
+                var _children = children ? '['+children.trim()+']' : 'null';
 
                 if (nodeType === 1) {
                     return elPragma + '(' + type + ', ' + _props +', ' + _children + ')';
