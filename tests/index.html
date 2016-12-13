@@ -11,33 +11,54 @@
 		var html = `
 		/* @jsx h */
 
-		<div className={css(styles.main)}>
-		    <header className={css(styles.header)}>
-		      <h1 className={css(styles.title)}>
-		        JSX Live Editor
-		      </h1>
-		    </header>
-		    <div className={css(styles.container)}>
-		      <Compiler />
-		    </div>
-			<div class="oh" checked></div>
-			<Component></Component>
-		</div>
+<div className={css(styles.main)}>
+    <header className={css(styles.header)}>
+      <h1 className={css(styles.title)}>
+        JSX Live Editor
+      </h1>
+    </header>
+    <div className={css(styles.container)}>
+      <Compiler />
+    </div>
+	<div class="oh" checked></div>
+	<Component></Component>
+</div>
 
-		return <B key="b"><A /></B>
+return <B key="b"><A /></B>
 
-		return <div key="a">A</div>
+return <div key="a">A</div>
 
-		var Foo = (<div className={css(styles.container)}>
-			<Compiler />
-		</div>)
+var Foo = (<div className={css(styles.container)}>
+	<Compiler />
+</div>)
 
-		var p = <p class={name}>hello world</p>;
+var p = <p class={name}>hello world</p>;
 		`;
 
 		var start = performance.now();
 		var tree = jsx(html);
 		console.log(performance.now()-start, 'ms');
+		console.log(tree);
+
+		var html = `
+			
+function MyComponent(props) {
+	return (
+		<div>
+			<span>{ props.name }</span>
+			<MyComponent />
+			<div>
+				{
+					props.children.map(child => <div>{ child }</div>)
+				}
+			</div>
+		</div>
+	)
+}
+	
+		`;
+
+		var tree = jsx(html);
 		console.log(tree);
 	</script>
 </body>

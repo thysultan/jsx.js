@@ -24,8 +24,8 @@
 
 
     // regular expressions
-    var regJsx     = /(.?|\(\n)(<[\w][^\0]*?[^\/]>[^\0]*?<\/.*>)(\n\n|\)\n\n|\);|\n\)|;|\n\}| }|}\n)/g;
-    var regSpace   =  /  /g;
+    var regJsx     = /(.?|\(\n.*)(<[\w][^\0]*?[^\/]>[^\0]*?<\/.*>)(\n\n|\)\n\n|\);|\n\)|;|\n\}| }|}\n|.*\n.\);|.*\n.\))/g;
+    var regSpace   = /  /g;
 
     var VHelpers   = factory();
 
