@@ -553,6 +553,7 @@
         subject.text && (VText = subject.text);
         subject.component && (VComponent = subject.component);
         subject.element && (VElement = subject.element);
+        subject.props && (VProps = subject.props);
         subject.stringify && (VNode = subject.stringify);
     }
 
