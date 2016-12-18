@@ -3,7 +3,7 @@
 a light and extendable jsx compiler.
 
 - ~3kb minified
-- ~2kb minified + gzipped
+- ~1.5kb minified + gzipped
 
 ## API
 
