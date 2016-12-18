@@ -8,9 +8,8 @@
 <body>
 	<script src="../jsx.js"></script>
 	<script>
-		var html = `
-		/* @jsx h */
 
+var test1 = `
 <div className={css(styles.main)}>
     <header className={css(styles.header)}>
       <h1 className={css(styles.title)}>
@@ -32,34 +31,59 @@ var Foo = (<div className={css(styles.container)}>
 	<Compiler />
 </div>)
 
+(
+	<ul id=1 name="me" read="name foo" del=" name" class={2*2} checked>
+		<div>Hello {10*4}</div>
+		<div>Hi</div>
+		<hr>
+		<test/>
+		<Component>
+			{
+				arr.map(function (i) {
+					return <h1>Hello</h1>;
+				})
+			}
+		</Component>
+	</ul>
+)
+
 var p = <p class={name}>hello world</p>;
-		`;
 
-		var start = performance.now();
-		var tree = jsx(html);
-		console.log(performance.now()-start, 'ms');
-		console.log(tree);
+`;
 
-		var html = `
-			
-function MyComponent(props) {
-	return (
-		<div>
-			<span>{ props.name }</span>
-			<MyComponent />
-			<div>
-				{
-					props.children.map(child => <div>{ child }</div>)
-				}
-			</div>
-		</div>
-	)
-}
+var test2 = `
+return (
+    <div>
+        <header className="header">
+            <h1>todos</h1>
+            <input className="new-todo"
+                autofocus autocomplete="off"
+                placeholder="What needs to be done?"
+                onkeydown={ addItem }
+            />
+        </header>
+
+        { todos.length ? (
+            <section className="main">
+                <input className="toggle-all" type="checkbox"
+                    onChange={ toggleAll } checked={ numActive === 0 }
+                />
+
+                <ul className="todo-list">
+                    { shown.map(t => Item({d: t})) }
+                </ul>
+            </section>
+        ) : null }
+    </div>
+);
+`
 	
-		`;
+	// console.log(1, `<ul>{ shown.map(t => Item({d: t})) }</ul>;`);
+	// console.log(2, jsx(`<ul>{ shown.map(t => Item({d: t})) }</ul>;`));
 
-		var tree = jsx(html);
-		console.log(tree);
+	// console.log(2, jsx(`<ul id=1 name="me" class={2*2}></ul>;`));
+
+	console.log(jsx(test1));
 	</script>
 </body>
 </html>

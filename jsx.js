@@ -23,226 +23,66 @@
     'use strict';
 
 
-    // regular expressions
-    var regJsx     = /(.?|\(\n.*)(<[\w][^\0]*?[^\/]>[^\0]*?<\/.*>)(\n\n|\)\n\n|\);|\n\)|;|\n\}| }|}\n|.*\n.\);|.*\n.\))/g;
-    var regSpace   = /  /g;
-
-    var VHelpers   = factory();
-
-    // VNode constructors
-    var VText      = VHelpers.VText;
-    var VElement   = VHelpers.VElement;
-    var VComponent = VHelpers.VComponent;
-    var VProps     = VHelpers.VProps;
-    var VNode      = VHelpers.VNode;
-
-    // pragma
-    var pragma     = false;
-
-    var _txPragma  = 'VText';
-    var _elPragma  = 'VElement';
-    var _cmPragma  = 'VComponent';
-
-    var regPragma  = /\/\* +?@jsx +?(.+) \*\//g;
-    var txPragma   = _txPragma;
-    var elPragma   = _elPragma;
-    var cmPragma   = _cmPragma;
-
-    // boolean attributes
-    var boolAttr   = {
-        async:    true,  autofocus:  true,  autoplay:  true,  checked:    true,  allowFullscreen: true,   
-        controls: true,  declare:    true,  default:   true,  multiple:   true,  defaultMuted:    true,     
-        defer:    true,  disabled:   true,  draggable: true,  enabled:    true,  formNoValidate:  true,   
-        inert:    true,  isMap:      true,  itemScope: true,  loop:       true,  defaultChecked:  true,         
-        noShade:  true,  noValidate: true,  noWrap:    true,  open:       true,  pauseOnExit:     true,      
-        reversed: true,  scoped:     true,  seamless:  true,  selected:   true,  typeMustMatch:   true,        
-        sortable: true,  visible:    true,  trueSpeed: true,  noResize:   true,  indeterminate:   true, 
-        noHref:   true,  required:   true,  translate: true,  spellcheck: true,  defaultSelected: true,
-        compact:  true,  hidden:     true,  muted:     true,  readOnly:   true
-    };
-
-
     /**
      * ---------------------------------------------------------------------------------
      * 
-     * factories
+     * constants
      * 
      * ---------------------------------------------------------------------------------
      */
     
 
-    function factory () {
-        return {
-            /**
-             * text node constructor
-             * 
-             * @param {string} children
-             */
-            VText: function VText (children) {
-                return {
-                    nodeType: 3,
-                    type: 'text',
-                    props: {},
-                    children: children || '',
-                };
-            },
+    var EMPTY = {value: true};
+        EMPTY = Object.create(null, {
+        area:   EMPTY,
+        base:   EMPTY,
+        br:     EMPTY,
+        col:    EMPTY,
+        embed:  EMPTY,
+        hr:     EMPTY,
+        img:    EMPTY,
+        input:  EMPTY,
+        keygen: EMPTY,
+        link:   EMPTY,
+        meta:   EMPTY,
+        param:  EMPTY,
+        source: EMPTY,
+        track:  EMPTY,
+        wbr:    EMPTY
+    });
 
-            /**
-             * element node constructor
-             * 
-             * @param {string}  type
-             * @param {Object}  props
-             * @param {VNode[]} children
-             */
-            VElement: function VElement (type, props, children) {
-                return {
-                    nodeType: 1,
-                    type: type || '',
-                    props: props || {},
-                    children: children || []
-                };
-            },
+    var REG_JSX = (
+        /(.?|\(\n.*|\n\n.*)(<[\w][^\0]*?[^\/]>[^\0]*?<\/.*>)(\n\n|\)\n\n|\);|\n\)|\n\}| }|}\n|.*\n.\);|.*\n.\))/g
+    );
 
-            /**
-             * component node constructor 
-             * 
-             * @param {string}  type
-             * @param {Object}  props
-             * @param {VNode[]} children
-             */
-            VComponent: function VComponent (type, props, children) {
-                return {
-                    nodeType: 2,
-                    type: type || '',
-                    props: props || {},
-                    children: children || []
-                }; 
-            },
+    var REG_SPACES      = /  +/g;
+    var REG_WHITE_SPACE = /\t|\n/g
+    var REG_NEW_LINE    = /\n/g;
 
-            /**
-             * push props
-             * 
-             * @param  {string} key  
-             * @param  {any}    value
-             * @param  {Object} props
-             */
-            VProps: function VProps (key, value, props, node) {
-                props[key] = value;
-            },
+    var START_TAG       = 1;
+    var END_TAG         = 2;
 
-            /**
-             * stringify VNode
-             * 
-             * @param  {number}   nodeType
-             * @param  {(string)} type
-             * @param  {Object[]} props
-             * @param  {VNode[]}  children
-             * @return {string}          
-             */
-            VNode: function VNode (type, props, children, nodeType) {
-                if (nodeType === 3) {
-                    return pragma ? children : txPragma+'('+children+')';
-                }
+    var PROPS           = 3;
+    var CHILDREN        = 4;
+    var TEXT            = 5;
+    var JS              = 6;
 
-                var _props = props ? '{' + props + '}' : 'null';
-                var _children = children ? '['+children.trim()+']' : 'null';
+    var LESS_THAN       = 60;
+    var GREATER_THAN    = 62;
+    var SPACE           = 32;
+    var TAB             = 9;
+    var NEW_LINE        = 10;
+    var DBL_QOUTE       = 34;
+    var SGL_QOUTE       = 39;
+    var TMP_QOUTE       = 96;
+    var OPEN_BRACKET    = 123;
+    var CLOSE_BRACKET   = 125;
+    var EQUALS          = 61;
+    var DIVIDE          = 47;
 
-                if (nodeType === 1) {
-                    return elPragma + '(' + type + ', ' + _props +', ' + _children + ')';
-                } else {
-                    return cmPragma + '(' + type + ', ' + _props +', ' + _children + ')';
-                }
-            }
-        }
-    }
-
-
-    /**
-     * input stream factory
-     * 
-     * @param  {string} input
-     * @return {Object}
-     */
-    function input (str) {
-        // peek at the next character
-        function peek () {
-            return str[pos];
-        }
-
-        // move on to the next character
-        function next () {
-            return str[pos++];
-        }
-
-        // end of file
-        function eof () {
-            return pos === length;
-        }
-
-        // ignore everything until a certain point
-        function sleep (character, previous) {
-            if (previous === void 0) {              
-                while (pos !== length) {
-                    if (str[pos++].charCodeAt(0) === character) {
-                        break;
-                    }
-                }
-            } else {
-                while (pos !== length) { 
-                    if (str[pos++].charCodeAt(0) === character && str[pos-2].charCodeAt(0) === previous) {
-                        break;
-                    }
-                }
-            }
-        }
-
-        var pos = 0, length = str.length-1;
-
-        return {next: next, peek: peek, eof: eof, sleep: sleep};
-    }
-
-    
-    /**
-     * ---------------------------------------------------------------------------------
-     * 
-     * helpers
-     * 
-     * ---------------------------------------------------------------------------------
-     */
-
-
-    /**
-     * push props to vnode
-     * 
-     * @param  {string}  key  
-     * @param  {any}     value
-     * @param  {Object}  props 
-     * @param  {VNode}   node
-     */
-    function pushProp (key, value, props, node) {
-        if (value === '' && boolAttr[key]) {
-            value = true;
-        } else if (value.charAt(0) === '{') {
-            value = value.substr(1, value.length-2);
-        }
-
-
-        VProps(key, value, props, node);
-    }
-
-    /**
-     * push vnodes to children stack
-     * 
-     * @param  {VNode}   child  
-     * @param  {VNode[]} result 
-     * @param  {number}  level
-     * @param  {VNode[]} stack
-     */
-    function pushChild (child, result, level, stack) {
-        var destination = level === 0 ? result : stack[level - 1].children;
-
-        destination[destination.length] = child;
-    }
+    var COMPONENT       = 'VComponent';
+    var TEXT            = 'VText';
+    var ELEMENT         = 'VElement';
 
 
     /**
@@ -252,72 +92,103 @@
      * 
      * ---------------------------------------------------------------------------------
      */
+
+
+    var stringify = {
+        element: function (type, props, children, node) {
+            return ELEMENT+'('+type+', '+props+children;
+        },
+        component: function (type, props, children, node) {
+            return COMPONENT+'('+type+', '+props+children;
+        },
+        text: function (children, node) {
+            return TEXT ? TEXT+'('+children+')' : children;
+        },
+        type: function (type, node) {
+            return type;
+        },
+        props: function (props, node) {
+            var output = '', first = true;
+
+            for (var name in props) {
+                var prop = props[name];
+                var value = name+': '+prop;
+                output += first ? (first = false, value) : ', ' + value;
+            }
+
+            return output ? '{'+output+'}' : 'null';
+        },
+        children: function (children, node) {
+            var output = '';
+            var tabbed = tabs(node.indent);
+
+            for (var i = 0, l = children.length; i < l; i++) {
+                output += ',' + '\n' + tabbed + this.node(children[i]);
+            }
+
+            var tab = tabbed.substring(1);
+
+            return output ? ',['+output.substring(1)+'\n'+tab+'])' : ',\n'+tabbed+'null\n'+tab+')';
+        },
+        node: function (node) {
+            var indent   = node.indent;
+            var nodeType = node.nodeType;
+            var type     = this.type(node.type);
+            var props    = this.props(node.props);
+            var children = '';
+
+            if (node.code) {
+                children = node.children.replace(REG_JSX, finder).replace(REG_WHITE_SPACE, '');
+                children = ',\n' + tabs(indent) + children.substring(1, children.length-1) + '\n' + tabs(indent-1) + ')';
+            } else {
+                children = nodeType === 3 ? node.children : this.children(node.children, node);
+            }
+
+            switch (nodeType) {
+                case 1: return this.element(type, props, children, node); break;
+                case 2: return this.component(type, props, children, node); break;
+                case 3: return this.text(children, node); break;
+            }
+        }
+    };
+
+
+    /**
+     * ---------------------------------------------------------------------------------
+     * 
+     * helpers
+     * 
+     * ---------------------------------------------------------------------------------
+     */
     
 
-    /**
-     * stringify props
-     * 
-     * @param  {Object} props
-     * @return {string}
-     */
-    function strProps (props) {
-        var output = '', first = true;
+    function finder (match, group1, group2, group3) {
+        return group1.replace(/\t/g, '') + stringify.node(parse(group2)) + group3;
+    }
 
-        for (var name in props) {
-            var prop = props[name];
-            var value = "'" + name + "': " + prop;
+    function tabs (repeat) {
+        return '\t'.repeat(repeat);
+    }
 
-            output += first ? (first = false, value) : ', ' + value;
-        }
-
-        return output;
+    function push (node, level, result, stack) {
+        (level === 0 ? result : stack[level - 1].children).push(node);
     }
 
 
-    /**
-     * stringify children
-     * 
-     * @param  {number} nodeType
-     * @param  {array}  children
-     * @return {string}
-     */
-    function strChildren (nodeType, children) {
-        if (nodeType === 3) {
-            if (children.charAt(0) === '{') {
-                // js scope
-                return children.substr(1, children.length-2);
-            } else {
-                // plain string
-                return "'" + children + "'";
-            }
-        } else {
-            var length = children.length;
-            var _children = '';
-
-            for (var i = 0; i < length; i++) {
-                _children += (i === 0 ? '' : ',') + strNode(children[i]);
-            }
-
-            return _children;
-        }
+    function vnode (nodeType, type, props, children, empty) {
+        return {
+            nodeType: nodeType,
+            type: type,
+            props: props,
+            children: children,
+            empty: empty,
+            code: false,
+            indent: 0,
+        };
     }
 
-
-    /**
-     * stringify abstract syntax tree (AST)
-     * 
-     * @param  {Object} subject
-     * @return {string}
-     */
-    function strNode (subject) {
-        var nodeType  = subject.nodeType;
-        var props     = strProps(subject.props);
-        var children  = strChildren(nodeType, subject.children);
-
-        var candidate = subject.type;
-        var type      = candidate.toLowerCase() === candidate ? ("'" + candidate + "'") : candidate;
-
-        return VNode(type, props, children, nodeType);
+    function vtext (content) {
+        return vnode(3, 'text', {}, content, true);
     }
 
 
@@ -330,286 +201,246 @@
      */
     
 
-    /**
-     * parse string to ast
-     * 
-     * @param  {string} str
-     * @return {Any[VNode]}    
-     */
     function parse (str) {
-        var inElem    = false;  // everything between `<` and `/`
-        var inTag     = false;  // everything between `<` and `>`
-        var inProps   = false;  // everything between `<tag ` and `>`
-        var inText    = false;  // everything not of the above
-        var result    = [];     // element store
-        var stack     = [];     // buffer array of elements indexed by level
-        var current   = null;   // current element
-        var level     = -1;     // level in the tree
+        // convert spaces to tabs
+        str = str.replace(REG_SPACES, '\t');
 
-        var stream = input(str);
-        var next   = stream.next;
-        var peek   = stream.peek;
-        var sleep  = stream.sleep;
-        var eof    = stream.eof;
+        var indent  = 0;
+        var result  = [];
+        var stack   = [];
+        var current = null;
+        var level   = -1;
+        var context = 0;
+        var len     = str.length;
+        var i       = 0;
 
-        while (!eof()) {
-            var character = next();
-            var code = character.charCodeAt(0);
+        // parse + compile
+        while (i < len) {
+            switch (str.charCodeAt(i)) {
+                case NEW_LINE:
+                case TAB:
+                    break;
+                case LESS_THAN:
+                    context = START_TAG; 
+                    break;
+                case DIVIDE:
+                    context = END_TAG; 
+                    break;
+                case OPEN_BRACKET: {
+                    var javascript = '';
+                    var counter    = 0;
 
-            // ` `
-            if (code === 32 && peek().charCodeAt() === 32) {
-                continue;
-            }
-
-            // \t, \n
-            if (code === 9 || code === 10) {
-                continue;
-            }
-
-            // <
-            if (code === 60) {
-                // if the previous current element was a text node
-                // since text nodes do not have closing tags
-                // we close them when a new tag element is found
-                // which means we have to go back one level up the tree
-                if (inText) {
-                    inText = false;
-                    level--;
-                }
-
-                var nextchar = peek();
-                var nextcode = nextchar.charCodeAt(0);
-
-                // /
-                if (nextcode !== 47) {
-                    // html comment
-                    if (nextcode === 33) {
-                        // sleep untill > character
-                        sleep(62);
-                    } else {
-                        // init element, props
-                        inElem = inTag = true;
-
-                        // encounter opening element identifier go one level down the tree
-                        level++;
-
-                        // create new element, if nextCharater is uppercase VComponent, else VElement
-                        current = (nextchar.toLowerCase() === nextchar ? VElement : VComponent)('', {}, []);
-
-                        // push element to children stack
-                        pushChild(current, result, level, stack);
-
-                        // push new level
-                        stack[level] = current;
-                    }
-                }
-            } 
-            // /
-            else if (code === 47) {
-                var nextchar = peek();
-                var nextcode = nextchar.charCodeAt(0);
-
-                // /
-                if (nextcode === 47) {
-                    // sleep untill \n
-                    sleep(10);
-                } 
-                // *
-                else if (nextcode === 42) {
-                    // block comments
-                    // sleep until the previous and next character are '/' and '*'
-                    sleep(47, 42);
-                } 
-                else {
-                    // exit element, tag and props
-                    inElem = inTag = inProps = false;
-
-                    // encounter closing element identifier, go one level up the tree
-                    level--;
-
-                    // traverse to the the closing tag '>'
-                    sleep(62);
-                }
-            } 
-            // > 
-            else if (code === 62) {
-                // exit tag and props
-                inTag = inProps = false;
-            }
-            // ` ` 
-            else if (inTag && code === 32) {
-                // init props
-                inProps = true;
-            } 
-            else if (inProps) {
-                // traverse and register all props
-                var char  = character;
-                var props = current.props;
-                var key   = '';
-                var value = '';
-
-                // side = false --> value, side = true ---> key
-                var side = true;
-
-                while (true) {
-                    var _code = char.charCodeAt(0);
-
-                    // =
-                    if (_code === 61) {
-                        side = false;
-                    }
-                    // ` ` 
-                    else if (_code === 32) {
-                        pushProp(key, value, props, current);
-
-                        // new prop, reset
-                        side = true; key = value = '';
-                    } else {
-                        // key, value
-                        side ? key += char : value += char;
-                    }
-
-                    // peek at next character
-                    var nextcode = peek().charCodeAt(0);
-
-                    // end of props if next character is > or current is / and next character is >
-                    // this handles both
-                    // <input /> and <input>
-                    // >, /, >
-                    if (nextcode === 62 || (_code === 47 && nextcode === 62)) {
-                        if (key !== '' && key !== '/') {
-                            pushProp(key, value, props, current);
+                    while (i < len) {
+                        switch (str.charCodeAt(i)) {
+                            case OPEN_BRACKET:  counter++; break;
+                            case CLOSE_BRACKET: counter--; break;
                         }
+                        
+                        javascript += str[i++];
 
-                        break;
+                        if (counter === 0) {
+                            break;
+                        }
                     }
 
-                    char = next();
+                    current.children = javascript;
+                    current.code = true;
+
+                    break;
                 }
-            } 
-            else {
-                // element type
-                if (inTag) {
-                    current.type += character;
-                } else if (current !== null) {
-                    if (inText) {
-                        if (character === '{') {
-                            var chars = character;
+                default: {
+                    switch (context) {
+                        case START_TAG: {
+                            level++, indent++;
 
-                            // sleep until end }
-                            while (!eof()) {
-                                var char = next();
+                            context = TEXT;
+                            current = stack[level] = vnode(0, '', {}, [], false);
+                            i       = tag(i, len, str, current);
 
-                                chars += char;
+                            push(current, level, result, stack);
 
-                                // }
-                                if (char.charCodeAt(0) === 125) {
-                                    // push text node to children stack
-                                    pushChild(VText(chars), result, level, stack);
-                                    break;
-                                }       
-                            }
+                            current.indent = indent;
+                            current.empty && (level--, indent--);
+                            
+                            break;
+                        } 
+                        case END_TAG: {
+                            indent--, level--;
+
+                            i = sleep(i, len, str, GREATER_THAN);
+
+                            break;
+                        }
+                        case TEXT: {
+                            i = text(i, len, str, current);
+
+                            break;
+                        }
+                    }
+                }
+            }
+
+            i++;
+        }
+
+        return result[0];
+    }
+
+    function tag (i, len, str, node) {
+        var type     = '';
+        var props    = {};
+        var empty    = false;
+        var nodeType = 0;
+
+        var assign   = false;
+        var name     = '';
+        var value    = '';
+        var qoute    = 0;
+
+        // untill a closing tag >
+        while (i < len) {
+            var code = str.charCodeAt(i);
+
+            if (code === GREATER_THAN && qoute === 0) {
+                if (nodeType === 0) {
+                    type = name;
+                    nodeType = type.toLowerCase() === type ? 1 : 2;
+                } else {
+                    name && (props[name] = value || true); 
+                }
+                break;
+            } else {
+                // prop value
+                if (code === EQUALS) {
+                    assign = true;
+                }
+                // new prop
+                else if (code === SPACE && qoute === 0) {
+                    if (nodeType === 0) {
+                        type = name;
+                        nodeType = type.toLowerCase() === type ? 1 : 2;
+                    } else {
+                        if (value.charCodeAt(0) === OPEN_BRACKET) {
+                            value = value.substring(1, value.length-1);
+                            props[name] = string(value, false);
                         } else {
-                            // push children to text node
-                            current.children += character;
+                            props[name] = string(value || true, true);
+                        }
+                    }
+
+                    // prop name
+                    assign = false;
+                    name = value = '';
+                }
+                else if (code === SGL_QOUTE || code === DBL_QOUTE || code === TMP_QOUTE) {
+                    qoute = qoute !== 0 && code === qoute ? 0 : code;
+                }
+                // empty element
+                else if (code === DIVIDE && qoute === 0 && assign === false) {
+                    empty = true;
+                }
+                else {
+                    assign ? value+= str[i] : name += str[i];
+                }
+            }
+
+            i++;
+        }
+
+        // assign to node
+        node.nodeType = nodeType;
+        node.type     = type;
+        node.props    = props;
+        node.empty    = EMPTY[type] || empty;
+
+        // throw '';
+
+        return i;
+    }
+
+    function string (content, type) {
+        return type ? '\''+content.trim()+'\'' : content;
+    }
+
+    function text (i, len, str, node) {
+        var line  = '';
+        var arr   = [];
+        var index = 0;
+
+        // untill an opening tag <
+        while (i < len) {
+            var code = str.charCodeAt(i);
+
+            if (code === LESS_THAN) {
+                break;
+            }
+            else if (code === OPEN_BRACKET) {
+                if (line) {
+                    arr[index++] = string(line, true);
+                    line = '';
+                }
+            } 
+            else if (code === CLOSE_BRACKET) {
+                // {javascript}
+                arr[index++] = string(line, false);
+                line = '';
+            }
+            else {
+                line += str[i];
+            }
+
+            i++;
+        }
+
+        if (line) {
+            // last text node
+            arr[index++] = string(line, true);
+        }
+
+        // assign to node children of text nodes
+        node.children = arr.map(vtext);
+
+        return i;
+    }
+
+    function sleep (i, len, str, code) {
+        // sleep untill the `code` character
+        while (i < len) {
+            if (str.charCodeAt(i) === code) {
+                break;
+            }
+
+            i++;
+        }
+
+        return i;
+    }
+
+    function jsx (input, extend) {
+        if (extend) {
+            if (typeof extend === 'object') {
+                for (var name in extend) {
+                    var value = extend[name];
+
+                    if (typeof value === 'string') {
+                        switch (value) {
+                            case 'component': COMPONENT = value; break;
+                            case 'element': ELEMENT = value; break;
+                            case 'text': TEXT = value; break;
                         }
                     } else {
-                        inText = true;
-                        level++;
-
-                        // create new text node
-                        current = VText(character);
-
-                        // push element to children stack
-                        pushChild(current, result, level, stack);
-
-                        // push new level
-                        stack[level] = current;
+                        stringify[name] = value;
                     }
                 }
+            } else {
+                COMPONENT = extend;
+                TEXT      = '';
+                ELEMENT   = extend;
             }
         }
 
-        return result;
+        return input.replace(REG_JSX, finder);
     }
 
-
-    /**
-     * ---------------------------------------------------------------------------------
-     * 
-     * extend
-     * 
-     * ---------------------------------------------------------------------------------
-     */
-    
-
-    /**
-     * allows us to inject a function used 
-     * to construct the structure of a VNode object
-     *  
-     * @param  {Object<string, function>} subject
-     */
-    function extender (subject) {
-        subject.text && (VText = subject.text);
-        subject.component && (VComponent = subject.component);
-        subject.element && (VElement = subject.element);
-        subject.props && (VProps = subject.props);
-        subject.stringify && (VNode = subject.stringify);
-    }
-
-
-    /**
-     * ---------------------------------------------------------------------------------
-     * 
-     * transformer
-     * 
-     * ---------------------------------------------------------------------------------
-     */
-
-
-    /**
-     * transpiler
-     * 
-     * @param  {string} match
-     * @param  {string} group1
-     * @param  {string} group2
-     * @param  {string} group3
-     * @return {string}        
-     */
-    function transpiler (match, group1, group2, group3) {
-        return group1 + strNode(parse(group2.replace(regSpace, ''))[0]) + group3;
-    }
-
-
-    /**
-     * ---------------------------------------------------------------------------------
-     * 
-     * exports
-     * 
-     * ---------------------------------------------------------------------------------
-     */
-    
-
-    /**
-     * jsx
-     * 
-     * @param  {string} str
-     * @param  {(undefined|Object<string, function>)} extend
-     * @return {string}
-     */
-    return function jsx (str, extend) {
-        if (extend !== void 0) {
-            extender(extend);
-        }
-
-        var custom = regPragma.exec(str);
-
-        if (custom !== null) {
-            pragma   = true;
-            cmPragma = elPragma = custom[1];
-            txPragma = '';
-        }
-
-        return str.replace(regJsx, transpiler);
-    }
+    return jsx;
 }));
