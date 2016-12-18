@@ -10,49 +10,33 @@ a light and extendable jsx compiler.
 ```javascript
 jsx(
 	str, {string} 
-	extend: {Object<string, function>}
+	extend: {(Object<string, function>|string)}
 );
 ```
 
-This method recieves a string and optional extend object that is used to create
+This method recieves a string and optional extend object/string that is used to create
 a custom mapping for the javascript output, for example...
 
 ```javascript
 jsx(str, {
 	text: function (children) {
-	 	return {
-	 		nodeType: 3,
-	 		type: 'text',
-	 		props: emptyObject,
-	 		children: children || '',
-	 		_el: null
-	 	};
+	 	// return string
 	},
 	element: function (type, props, children) {
-	 	return {
-	 		nodeType: 1,
-	 		type: type || '',
-	 		props: props || {},
-	 		children: children || [],
-	 		_el: null
-	 	};
+	 	// return string
 	},
 	component: function (type, props, children) {
-		return {
-	 		nodeType: 1,
-	 		type: type || '',
-	 		props: props || {},
-	 		children: children || [],
-	 		_el: null
-	 	}; 
+		// return string 
 	}
-	props: function (key, value, props, node) {
-		props[key] = value;
+	props: function (props, node) {
+		// return string
 	}
-	stringify: function (type, props, children, nodeType) {
-		return '{nodeType:'+nodeType+',type:'+type+',props:{'+props+'},children:'+children+',_el:null}';
+	node: function (node) {
+		// return string
 	}
 });
+
+jsx(str, 'React.createElement');
 ```
 
-If the input string has a pragma comment, for example`/** @jsx h */` it will use that for the output mapping.
+If the input string has a pragma comment, for example`/* @jsx h */` it will use that for the output mapping.

@@ -51,22 +51,14 @@
         wbr:    EMPTY
     });
 
-    var REG_JSX = (
-        /(.?|\(\n.*|\n\n.*)(<[\w][^\0]*?[^\/]>[^\0]*?<\/.*>)(\n\n|\)\n\n|\);|\n\)|\n\}| }|}\n|.*\n.\);|.*\n.\))/g
-    );
+    var REG_JSX = /<([\w]+)[^\0]*?>[^\0]*?<\/\1>(?=\n\n+|;|\n+\)|\)\n\n+|\n+\t\))/g;
 
     var REG_SPACES      = /  +/g;
-    var REG_WHITE_SPACE = /\t|\n/g
-    var REG_NEW_LINE    = /\n/g;
+    var REG_PRAGMA      = /\/* +@jsx +(.*) +\*\//g;
 
     var START_TAG       = 1;
     var END_TAG         = 2;
-
-    var PROPS           = 3;
-    var CHILDREN        = 4;
     var TEXT            = 5;
-    var JS              = 6;
-
     var LESS_THAN       = 60;
     var GREATER_THAN    = 62;
     var SPACE           = 32;
@@ -83,6 +75,8 @@
     var COMPONENT       = 'VComponent';
     var TEXT            = 'VText';
     var ELEMENT         = 'VElement';
+
+    var EMPTY_SHAPE     = vnode(0, '', {}, [], true, 0);
 
 
     /**
@@ -123,31 +117,39 @@
             var tabbed = tabs(node.indent);
 
             for (var i = 0, l = children.length; i < l; i++) {
-                output += ',' + '\n' + tabbed + this.node(children[i]);
+                output += ',' + '\n' + tabbed + this.node(children[i], node);
             }
 
             var tab = tabbed.substring(1);
 
-            return output ? ',['+output.substring(1)+'\n'+tab+'])' : ',\n'+tabbed+'null\n'+tab+')';
+            if (output) {
+                output = output.substring(1);
+                return children[0].nodeType !== 4 ? ', ['+output+'\n'+tab+'])' : ','+output;
+            } else {
+                return ', '+'null'+')';
+            }
         },
-        node: function (node) {
+        node: function (node, parent) {
             var indent   = node.indent;
             var nodeType = node.nodeType;
             var type     = this.type(node.type);
             var props    = this.props(node.props);
-            var children = '';
-
-            if (node.code) {
-                children = node.children.replace(REG_JSX, finder).replace(REG_WHITE_SPACE, '');
-                children = ',\n' + tabs(indent) + children.substring(1, children.length-1) + '\n' + tabs(indent-1) + ')';
-            } else {
+            var children = null;
+            
+            if (nodeType !== 4) {
                 children = nodeType === 3 ? node.children : this.children(node.children, node);
             }
 
             switch (nodeType) {
-                case 1: return this.element(type, props, children, node); break;
-                case 2: return this.component(type, props, children, node); break;
-                case 3: return this.text(children, node); break;
+                case 1: return this.element(type, props, children, node);
+                case 2: return this.component(type, props, children, node);
+                case 3: return this.text(children, node);
+                case 4: {
+                    children = node.children.replace(REG_JSX, finder);
+                    children = children.substring(1, children.length-1).trim() + '\n' + tabs(indent-1) + ')';
+                    
+                    return children;
+                }
             }
         }
     };
@@ -162,8 +164,8 @@
      */
     
 
-    function finder (match, group1, group2, group3) {
-        return group1.replace(/\t/g, '') + stringify.node(parse(group2)) + group3;
+    function finder (match) {
+        return stringify.node(parse(match), EMPTY_SHAPE);
     }
 
     function tabs (repeat) {
@@ -175,20 +177,19 @@
     }
 
 
-    function vnode (nodeType, type, props, children, empty) {
+    function vnode (nodeType, type, props, children, empty, indent) {
         return {
             nodeType: nodeType,
             type: type,
             props: props,
             children: children,
             empty: empty,
-            code: false,
-            indent: 0,
+            indent: indent,
         };
     }
 
     function vtext (content) {
-        return vnode(3, 'text', {}, content, true);
+        return vnode(3, 'text', {}, content, true, 0);
     }
 
 
@@ -227,8 +228,8 @@
                     context = END_TAG; 
                     break;
                 case OPEN_BRACKET: {
-                    var javascript = '';
-                    var counter    = 0;
+                    var block   = '';
+                    var counter = 0;
 
                     while (i < len) {
                         switch (str.charCodeAt(i)) {
@@ -236,15 +237,14 @@
                             case CLOSE_BRACKET: counter--; break;
                         }
                         
-                        javascript += str[i++];
+                        block += str[i++];
 
                         if (counter === 0) {
                             break;
                         }
                     }
 
-                    current.children = javascript;
-                    current.code = true;
+                    current.children.push(vnode(4, '@block', {}, block, false, indent));
 
                     break;
                 }
@@ -252,22 +252,23 @@
                     switch (context) {
                         case START_TAG: {
                             level++, indent++;
-
                             context = TEXT;
-                            current = stack[level] = vnode(0, '', {}, [], false);
+                            current = stack[level] = vnode(0, '', {}, [], false, indent);
                             i       = tag(i, len, str, current);
 
                             push(current, level, result, stack);
 
-                            current.indent = indent;
-                            current.empty && (level--, indent--);
+                            // if empty node revert level and indent
+                            if (current.empty) {
+                                level--, indent--;
+                            }
                             
                             break;
                         } 
                         case END_TAG: {
-                            indent--, level--;
-
-                            i = sleep(i, len, str, GREATER_THAN);
+                            level--, indent--;
+                            current = stack[level];
+                            i       = sleep(i, len, str, GREATER_THAN);
 
                             break;
                         }
@@ -315,7 +316,7 @@
                     assign = true;
                 }
                 // new prop
-                else if (code === SPACE && qoute === 0) {
+                else if (qoute === 0 && (code === SPACE || code === NEW_LINE || code === TAB)) {
                     if (nodeType === 0) {
                         type = name;
                         nodeType = type.toLowerCase() === type ? 1 : 2;
@@ -324,7 +325,7 @@
                             value = value.substring(1, value.length-1);
                             props[name] = string(value, false);
                         } else {
-                            props[name] = string(value || true, true);
+                            props[name] = string(value || 'true', true);
                         }
                     }
 
@@ -335,12 +336,28 @@
                 else if (code === SGL_QOUTE || code === DBL_QOUTE || code === TMP_QOUTE) {
                     qoute = qoute !== 0 && code === qoute ? 0 : code;
                 }
+                else if (code === OPEN_BRACKET) {
+                    i++;
+
+                    while (i < len) {                        
+                        if (str.charCodeAt(i) === CLOSE_BRACKET) {
+                            break;
+                        }
+
+                        value += str[i++];
+                    }
+
+                    props[name] = string(value.trim(), false);
+
+                    assign = false;
+                    name = value = '';
+                }
                 // empty element
                 else if (code === DIVIDE && qoute === 0 && assign === false) {
                     empty = true;
                 }
                 else {
-                    assign ? value+= str[i] : name += str[i];
+                    assign ? value += str[i] : name += str[i];
                 }
             }
 
@@ -349,11 +366,9 @@
 
         // assign to node
         node.nodeType = nodeType;
-        node.type     = type;
+        node.type     = nodeType === 2 ? type : '\'' + type + '\'';
         node.props    = props;
         node.empty    = EMPTY[type] || empty;
-
-        // throw '';
 
         return i;
     }
@@ -433,9 +448,15 @@
                     }
                 }
             } else {
-                COMPONENT = extend;
                 TEXT      = '';
-                ELEMENT   = extend;
+                COMPONENT = ELEMENT = extend;
+            }
+        } else {
+            var pragma = REG_PRAGMA.exec(input);
+            
+            if (pragma) {
+                TEXT      = '';
+                COMPONENT = ELEMENT = pragma[1];
             }
         }
 
