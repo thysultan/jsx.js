@@ -498,7 +498,7 @@
 					}
 				}
 			} else {
-				TEXT      = '';
+				TEXT = '';
 				COMPONENT = ELEMENT = extend;
 			}
 		} else {
