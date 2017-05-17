@@ -9,7 +9,7 @@ a light and extendable jsx compiler.
 
 ```javascript
 jsx(
-	str, {string} 
+	str, {string}
 	extend: {(Object<string, function>|string)}
 );
 ```
@@ -26,7 +26,7 @@ jsx(str, {
 	 	// return string
 	},
 	component: function (type, props, children) {
-		// return string 
+		// return string
 	}
 	props: function (props, node) {
 		// return string
@@ -39,4 +39,4 @@ jsx(str, {
 jsx(str, 'React.createElement');
 ```
 
-If the input string has a pragma comment, for example`/* @jsx h */` it will use that for the output mapping.
+If the input string has a pragma comment, for example`/* @jsx h */` it will use that for the output mapping, if no pragma comment/custom mapping has been specicifed it defaults to hyperscript `h(...)`.

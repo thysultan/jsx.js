@@ -2,7 +2,7 @@
 	"name": "jsx.js",
 	"main": "jsx.js",
 	"description": "a light and extendable jsx compiler",
-	"version": "0.3.0",
+	"version": "0.3.1",
 	"homepage": "https://github.com/thysultan/jsx.js",
 	"license": "MIT",
 	"author": {
@@ -14,9 +14,9 @@
 		"transpiler",
 		"compiler",
 		"parser",
-		"vdom", 
-		"virtual", 
-		"virtual dom", 
+		"vdom",
+		"virtual",
+		"virtual dom",
 		"fast",
 		"lightweight"
 	],
